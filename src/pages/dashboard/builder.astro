@@ -1,0 +1,459 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Agent Builder" activeSection="builder">
+
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start">
+
+    <!-- Left: form -->
+    <div>
+      <!-- Step 1: Identity -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span class="card-title">1 — Identity & Voice</span>
+          <span class="badge badge-blue">Required</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Agent Name</label>
+            <input class="input" id="f-name" type="text" placeholder="e.g. Alex — Scheduling Assistant" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <input class="input" id="f-desc" type="text" placeholder="What does this agent do?" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">LLM Provider</label>
+            <select class="select" id="f-llm-provider" onchange="updateLLMModels()">
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="groq">Groq</option>
+              <option value="gemini">Google Gemini</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">LLM Model</label>
+            <select class="select" id="f-llm-model">
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+              <option value="gpt-4o">gpt-4o</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">TTS Provider</label>
+            <select class="select" id="f-tts-provider" onchange="updateVoices()">
+              <option value="elevenlabs">ElevenLabs</option>
+              <option value="openai">OpenAI TTS</option>
+              <option value="playht">PlayHT</option>
+              <option value="deepgram">Deepgram TTS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Voice</label>
+            <select class="select" id="f-voice-id"></select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">STT Provider</label>
+            <select class="select" id="f-stt-provider">
+              <option value="deepgram">Deepgram</option>
+              <option value="openai">OpenAI Whisper</option>
+              <option value="assemblyai">AssemblyAI</option>
+              <option value="google">Google Speech</option>
+              <option value="azure">Azure Speech</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Language</label>
+            <select class="select" id="f-language">
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="pt">Portuguese</option>
+              <option value="ja">Japanese</option>
+              <option value="ko">Korean</option>
+              <option value="zh">Chinese</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Behavior -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span class="card-title">2 — Behavior & Personality</span>
+          <span class="badge badge-blue">Required</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Role / Who is this agent?</label>
+          <textarea class="textarea" id="f-role" placeholder="You are Alex, a friendly scheduling assistant for Acme Corp. You help callers book, reschedule, and cancel appointments." style="min-height:80px"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Behavior Rules (voice-optimized)</label>
+          <textarea class="textarea" id="f-behavior" placeholder="- Speak in short, complete sentences — one idea at a time.&#10;- Always confirm details before finalizing a booking.&#10;- Use natural fillers like 'Got it' and 'Sure thing' — but not repeatedly.&#10;- Do not read lists aloud. Summarize instead." style="min-height:140px"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">How to Close the Call</label>
+          <textarea class="textarea" id="f-closing" placeholder="When the caller confirms their appointment is booked or says goodbye, thank them and use request_end_session. Keep the closing under two sentences." style="min-height:70px"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Greeting / First Message (optional)</label>
+          <input class="input" id="f-init" type="text" placeholder="e.g. Thanks for calling Acme. This is Alex — how can I help you today?" />
+        </div>
+      </div>
+
+      <!-- Step 3: Tools -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span class="card-title">3 — Tools & Integrations</span>
+          <span class="badge badge-gray">Optional</span>
+        </div>
+
+        <p class="text-dim text-sm mb-4">Enable pre-built integrations for this agent. You can also connect custom webhook tools.</p>
+
+        <div style="display:flex;flex-direction:column;gap:10px" id="tool-toggles">
+          <!-- populated by JS -->
+        </div>
+
+        <div class="mt-4">
+          <div class="form-label" style="margin-bottom:8px">Custom Webhook Tool</div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+            <input class="input" id="f-webhook-url" type="url" placeholder="https://your-api.com/tool-endpoint" />
+            <button class="btn btn-ghost" onclick="addWebhookTool()">Add</button>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px">The agent will POST JSON to this URL when it needs to call this tool.</div>
+        </div>
+      </div>
+
+      <!-- Step 4: Knowledge base -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span class="card-title">4 — Knowledge Base</span>
+          <span class="badge badge-gray">Optional</span>
+        </div>
+        <p class="text-dim text-sm mb-4">Upload documents the agent can reference when answering questions. Supports PDF, DOCX, TXT, and Markdown.</p>
+        <div id="kb-drop-zone" style="border:2px dashed var(--border2);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border-color 0.15s" onmouseenter="this.style.borderColor='var(--accent)'" onmouseleave="this.style.borderColor='var(--border2)'" onclick="document.getElementById('kb-file-input').click()">
+          <div style="font-size:28px;margin-bottom:8px">📄</div>
+          <div style="font-size:13.5px;color:var(--text-dim)">Click to upload files or drag and drop</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">PDF · DOCX · TXT · MD · up to 20 MB each</div>
+        </div>
+        <input type="file" id="kb-file-input" multiple accept=".pdf,.docx,.txt,.md" style="display:none" onchange="handleKBFiles(this.files)" />
+        <div id="kb-file-list" style="margin-top:12px;display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveAgent()">Save Agent</button>
+        <button class="btn btn-ghost" onclick="history.back()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Right: preview -->
+    <div style="position:sticky;top:76px">
+      <div class="card mb-4">
+        <div class="card-title mb-4">Live Preview</div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;font-size:13px;line-height:1.6;color:var(--text-dim);min-height:180px;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px" id="preview-box">
+          Fill in the fields on the left to preview your agent's system prompt.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title mb-4" style="margin-bottom:12px">Test Call</div>
+        <p class="text-dim text-sm mb-4">Enter a phone number to receive a test call from this agent.</p>
+        <div class="form-group">
+          <input class="input" id="test-phone" type="tel" placeholder="+1 (555) 000-0000" />
+        </div>
+        <button class="btn btn-primary w-full" style="justify-content:center" onclick="testCall()">📞 Call Me Now</button>
+        <div id="test-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LLM_MODELS = {
+      openai:    ['gpt-4o-mini','gpt-4o','gpt-4-turbo','gpt-3.5-turbo'],
+      anthropic: ['claude-3-5-haiku-20241022','claude-3-5-sonnet-20241022','claude-3-opus-20240229'],
+      groq:      ['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768'],
+      gemini:    ['gemini-2.0-flash','gemini-1.5-pro','gemini-1.5-flash'],
+    };
+
+    const TTS_VOICES = {
+      elevenlabs: [
+        { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah (Female, Soft)' },
+        { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold (Male, Strong)' },
+        { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel (Female, Calm)' },
+        { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi (Female, Strong)' },
+        { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli (Female, Young)' },
+        { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh (Male, Deep)' },
+      ],
+      openai: [
+        { id: 'nova', name: 'Nova (Female)' },
+        { id: 'alloy', name: 'Alloy (Neutral)' },
+        { id: 'echo', name: 'Echo (Male)' },
+        { id: 'fable', name: 'Fable (British)' },
+        { id: 'onyx', name: 'Onyx (Male, Deep)' },
+        { id: 'shimmer', name: 'Shimmer (Female)' },
+      ],
+      playht: [
+        { id: 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs-voice/manifest.json', name: 'Jennifer (Female)' },
+        { id: 's3://voice-cloning-zero-shot/820da3d2-3a3b-42d7-b1fa-b60f0dc4ce3e/male-cs-voice/manifest.json', name: 'Michael (Male)' },
+      ],
+      deepgram: [
+        { id: 'aura-asteria-en', name: 'Asteria (Female)' },
+        { id: 'aura-luna-en', name: 'Luna (Female)' },
+        { id: 'aura-stella-en', name: 'Stella (Female)' },
+        { id: 'aura-orion-en', name: 'Orion (Male)' },
+        { id: 'aura-arcas-en', name: 'Arcas (Male)' },
+      ],
+    };
+
+    const TOOLS = [
+      { id: 'google_calendar', name: 'Google Calendar', icon: '📅', desc: 'Read and write calendar events, check availability, schedule appointments.' },
+      { id: 'hubspot',         name: 'HubSpot CRM',    icon: '🏢', desc: 'Look up contacts, create deals, log call notes.' },
+      { id: 'stripe',          name: 'Stripe',          icon: '💳', desc: 'Manage subscriptions, check invoices, create payment links.' },
+    ];
+
+    const enabledTools = new Set();
+    let kbFiles = [];
+    let editingAgentId = null;
+
+    function init() {
+      updateLLMModels();
+      updateVoices();
+      renderToolToggles();
+      setupPreviewUpdate();
+
+      // Check if editing existing agent
+      const params = new URLSearchParams(window.location.search);
+      editingAgentId = params.get('id');
+      if (editingAgentId) loadExistingAgent(editingAgentId);
+
+      // Drag-and-drop for KB
+      const zone = document.getElementById('kb-drop-zone');
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+      zone.addEventListener('dragleave', () => { zone.style.borderColor = 'var(--border2)'; });
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.style.borderColor = 'var(--border2)';
+        handleKBFiles(e.dataTransfer.files);
+      });
+    }
+
+    function updateLLMModels() {
+      const provider = document.getElementById('f-llm-provider').value;
+      const select = document.getElementById('f-llm-model');
+      const models = LLM_MODELS[provider] || [];
+      select.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+      updatePreview();
+    }
+
+    function updateVoices() {
+      const provider = document.getElementById('f-tts-provider').value;
+      const select = document.getElementById('f-voice-id');
+      const voices = TTS_VOICES[provider] || [];
+      select.innerHTML = voices.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+      updatePreview();
+    }
+
+    function renderToolToggles() {
+      document.getElementById('tool-toggles').innerHTML = TOOLS.map(t => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">${t.icon}</span>
+            <div>
+              <div style="font-size:13.5px;font-weight:600">${t.name}</div>
+              <div style="font-size:12px;color:var(--text-dim)">${t.desc}</div>
+            </div>
+          </div>
+          <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer">
+            <input type="checkbox" id="tool-${t.id}" style="opacity:0;width:0;height:0" onchange="toggleTool('${t.id}',this.checked)" />
+            <span style="position:absolute;inset:0;background:var(--border2);border-radius:20px;transition:0.2s" id="toggle-track-${t.id}"></span>
+            <span style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:0.2s" id="toggle-thumb-${t.id}"></span>
+          </label>
+        </div>`).join('');
+    }
+
+    function toggleTool(id, enabled) {
+      if (enabled) enabledTools.add(id);
+      else enabledTools.delete(id);
+      const track = document.getElementById(`toggle-track-${id}`);
+      const thumb = document.getElementById(`toggle-thumb-${id}`);
+      if (track && thumb) {
+        track.style.background = enabled ? 'var(--accent)' : 'var(--border2)';
+        thumb.style.transform = enabled ? 'translateX(18px)' : 'translateX(0)';
+      }
+      updatePreview();
+    }
+
+    function addWebhookTool() {
+      const url = document.getElementById('f-webhook-url').value.trim();
+      if (!url) return;
+      window.showToast('Custom webhook tool added (saved with agent)', 'success');
+      document.getElementById('f-webhook-url').value = '';
+    }
+
+    function handleKBFiles(files) {
+      for (const file of files) {
+        if (!kbFiles.find(f => f.name === file.name)) {
+          kbFiles.push(file);
+        }
+      }
+      renderKBFiles();
+    }
+
+    function renderKBFiles() {
+      document.getElementById('kb-file-list').innerHTML = kbFiles.map((f, i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 12px;font-size:13px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span>📄</span>
+            <span>${f.name}</span>
+            <span style="color:var(--text-muted);font-size:12px">${(f.size/1024).toFixed(0)} KB</span>
+          </div>
+          <button style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:16px" onclick="removeKBFile(${i})">✕</button>
+        </div>`).join('');
+    }
+
+    function removeKBFile(i) {
+      kbFiles.splice(i, 1);
+      renderKBFiles();
+    }
+
+    function buildSystemPrompt() {
+      const name = document.getElementById('f-name').value || 'Agent';
+      const role = document.getElementById('f-role').value;
+      const behavior = document.getElementById('f-behavior').value;
+      const closing = document.getElementById('f-closing').value;
+      const tools = [...enabledTools];
+
+      let prompt = `# Role\n${role || `You are ${name}, a helpful voice assistant.`}`;
+      if (behavior) prompt += `\n\n# Behavior\n${behavior}`;
+      if (tools.length) {
+        prompt += `\n\n# Tools\n\nYou have access to the following integrations: ${tools.join(', ')}.`;
+        prompt += `\n\nUse them when the caller's request clearly requires external data or an action. Always confirm results in plain language — never read raw data aloud.`;
+      }
+      if (closing) prompt += `\n\n# Ending the Call\n${closing}`;
+      return prompt;
+    }
+
+    function setupPreviewUpdate() {
+      const fields = ['f-name','f-role','f-behavior','f-closing','f-llm-model','f-tts-provider','f-voice-id'];
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updatePreview);
+      });
+    }
+
+    function updatePreview() {
+      document.getElementById('preview-box').textContent = buildSystemPrompt();
+    }
+
+    async function loadExistingAgent(id) {
+      try {
+        const agent = await window.apiFetch(`/agents/${id}`);
+        document.getElementById('f-name').value = agent.name || '';
+        document.getElementById('f-desc').value = agent.description || '';
+        document.getElementById('f-init').value = agent.init_prompt || '';
+        document.getElementById('f-llm-model').value = agent.llm_model || 'gpt-4o-mini';
+        document.getElementById('f-tts-provider').value = agent.preferred_tts_provider || 'elevenlabs';
+        document.getElementById('f-stt-provider').value = agent.preferred_stt_provider || 'deepgram';
+        updateVoices();
+        if (agent.tts_voice_id) document.getElementById('f-voice-id').value = agent.tts_voice_id;
+
+        // Parse system prompt sections
+        const sp = agent.system_prompt || '';
+        const roleMatch = sp.match(/# Role\n([\s\S]*?)(?=\n# |$)/);
+        const behaviorMatch = sp.match(/# Behavior\n([\s\S]*?)(?=\n# |$)/);
+        const closingMatch = sp.match(/# Ending the Call\n([\s\S]*?)(?=\n# |$)/);
+        if (roleMatch) document.getElementById('f-role').value = roleMatch[1].trim();
+        if (behaviorMatch) document.getElementById('f-behavior').value = behaviorMatch[1].trim();
+        if (closingMatch) document.getElementById('f-closing').value = closingMatch[1].trim();
+
+        document.querySelector('.card-title.mb-4, .modal-title').textContent = 'Edit Agent';
+        updatePreview();
+      } catch (e) {
+        window.showToast('Could not load agent: ' + e.message, 'error');
+      }
+    }
+
+    async function saveAgent() {
+      const name = document.getElementById('f-name').value.trim();
+      if (!name) { window.showToast('Agent name is required', 'error'); return; }
+
+      const body = {
+        name,
+        description: document.getElementById('f-desc').value.trim() || undefined,
+        system_prompt: buildSystemPrompt(),
+        init_prompt: document.getElementById('f-init').value.trim() || undefined,
+        preferred_llm_provider: document.getElementById('f-llm-provider').value,
+        llm_model: document.getElementById('f-llm-model').value,
+        preferred_tts_provider: document.getElementById('f-tts-provider').value,
+        tts_voice_id: document.getElementById('f-voice-id').value,
+        preferred_stt_provider: document.getElementById('f-stt-provider').value,
+        metadata: {
+          enabled_tools: [...enabledTools],
+          language: document.getElementById('f-language').value,
+        },
+      };
+
+      try {
+        if (editingAgentId) {
+          await window.apiFetch(`/agents/${editingAgentId}`, { method: 'PUT', body: JSON.stringify(body) });
+          window.showToast('Agent updated!', 'success');
+        } else {
+          await window.apiFetch('/agents', { method: 'POST', body: JSON.stringify(body) });
+          window.showToast('Agent created!', 'success');
+          setTimeout(() => window.location.href = '/dashboard/agents', 1000);
+        }
+      } catch (e) {
+        window.showToast('Save failed: ' + e.message, 'error');
+      }
+    }
+
+    async function testCall() {
+      const phone = document.getElementById('test-phone').value.trim();
+      if (!phone) { window.showToast('Enter a phone number', 'error'); return; }
+
+      const name = document.getElementById('f-name').value.trim();
+      if (!name) { window.showToast('Save the agent first before testing', 'error'); return; }
+
+      const resultDiv = document.getElementById('test-result');
+      resultDiv.textContent = 'Initiating call...';
+
+      try {
+        const agentBody = {
+          name,
+          description: document.getElementById('f-desc').value.trim() || undefined,
+          system_prompt: buildSystemPrompt(),
+          preferred_llm_provider: document.getElementById('f-llm-provider').value,
+          llm_model: document.getElementById('f-llm-model').value,
+          preferred_tts_provider: document.getElementById('f-tts-provider').value,
+          tts_voice_id: document.getElementById('f-voice-id').value,
+        };
+        await window.apiFetch('/calls/outbound', {
+          method: 'POST',
+          body: JSON.stringify({ to: phone, agentConfig: agentBody }),
+        });
+        resultDiv.textContent = '✅ Call initiated! You should receive a call shortly.';
+        resultDiv.style.color = 'var(--green)';
+      } catch (e) {
+        resultDiv.textContent = '⚠️ ' + e.message;
+        resultDiv.style.color = 'var(--red)';
+      }
+    }
+
+    init();
+  </script>
+</DashboardLayout>

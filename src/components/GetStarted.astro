@@ -1,0 +1,198 @@
+---
+const GITHUB_URL = 'https://github.com/saja-voice/saja';
+const GITHUB_README_URL = 'https://github.com/saja-voice/saja#readme';
+
+const steps = [
+  { num: '1', label: 'Install' },
+  { num: '2', label: 'Configure' },
+  { num: '3', label: 'Launch' },
+];
+---
+
+<section id="getstarted" class="py-28 px-6 relative overflow-hidden reveal">
+  <!-- Gradient background with pulse -->
+  <div
+    class="absolute inset-0 pointer-events-none"
+    style="background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(0, 212, 255, 0.07) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 80% 0%, rgba(124, 58, 237, 0.06) 0%, transparent 70%); animation: pulse-glow 6s ease-in-out infinite;"
+  ></div>
+
+  <!-- Cyan top border accent -->
+  <div
+    class="absolute top-0 left-1/2 -translate-x-1/2 h-px"
+    style="width: min(600px, 80%); background: linear-gradient(to right, transparent, #00D4FF, transparent); opacity: 0.4;"
+  ></div>
+
+  <div class="max-w-3xl mx-auto text-center relative">
+    <!-- Eyebrow -->
+    <p class="text-sm font-medium tracking-widest uppercase mb-6" style="color: #3D526B; letter-spacing: 0.12em;">
+      Get started
+    </p>
+
+    <!-- Heading with animated gradient -->
+    <h2 class="font-display font-bold mb-5" style="font-size: clamp(2rem, 4vw, 3rem); color: #F1F5F9; letter-spacing: -0.02em; line-height: 1.15;">
+      Start building in<br />
+      <span class="animated-gradient-text">
+        minutes
+      </span>
+    </h2>
+
+    <p class="text-lg mb-8" style="color: #64748B; max-width: 480px; margin-left: auto; margin-right: auto;">
+      Install saja, define your agent, and have a voice pipeline running locally in under 5 minutes.
+    </p>
+
+    <!-- Step indicators -->
+    <div class="flex items-center justify-center gap-0 mb-10">
+      {steps.map((step, i) => (
+        <Fragment>
+          <div class="flex items-center gap-2 px-4 py-2 rounded-full border" style="border-color: #1E293B; background-color: rgba(13, 17, 23, 0.8);">
+            <span class="text-xs font-mono font-bold" style="color: #00D4FF;">{step.num}</span>
+            <span class="text-xs font-medium" style="color: #64748B;">{step.label}</span>
+          </div>
+          {i < steps.length - 1 && (
+            <div class="w-8 border-t border-dashed" style="border-color: #1E293B;"></div>
+          )}
+        </Fragment>
+      ))}
+    </div>
+
+    <!-- pip install card -->
+    <div
+      class="pip-card inline-flex items-center gap-4 rounded-xl px-6 py-4 mb-10 border w-full max-w-md"
+      style="background-color: #0D1117; border-color: #1E293B;"
+    >
+      <span class="font-mono text-lg flex-1 text-left" style="color: #00D4FF;">
+        pip install saja
+      </span>
+      <button
+        id="cta-copy-btn"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all border shrink-0"
+        style="background-color: #1E293B; border-color: #2D3F55; color: #94A3B8;"
+        aria-label="Copy pip install saja"
+      >
+        <svg id="cta-copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        <span id="cta-copy-label">Copy</span>
+      </button>
+    </div>
+
+    <!-- CTAs -->
+    <div class="flex flex-wrap gap-4 justify-center mb-10">
+      <a
+        href={GITHUB_README_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="cta-primary inline-flex items-center gap-2 px-7 py-3.5 rounded-lg font-semibold text-sm transition-all"
+        style="background-color: #00D4FF; color: #080C14;"
+      >
+        Read the quickstart
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+      <a
+        href={GITHUB_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="cta-secondary inline-flex items-center gap-2 px-7 py-3.5 rounded-lg font-semibold text-sm transition-all border"
+        style="color: #F1F5F9; border-color: #2D3F55;"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+        View on GitHub
+      </a>
+    </div>
+
+    <!-- Requirements note -->
+    <p class="text-xs" style="color: #3D526B;">
+      Python 3.10+ · Apache 2.0 · Works locally, ships anywhere
+    </p>
+
+    <!-- Decorative waveform -->
+    <div class="flex items-end justify-center gap-0.5 mt-10 opacity-15">
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div
+          class="rounded-full"
+          style={`
+            width: 2px;
+            height: ${8 + Math.sin(i * 0.4) * 10 + Math.random() * 6}px;
+            background: linear-gradient(to top, #00D4FF, #A78BFA);
+            animation: wave-bar ${0.8 + Math.random() * 0.6}s ease-in-out infinite alternate;
+            animation-delay: ${i * 60}ms;
+          `}
+        ></div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .animated-gradient-text {
+    background: linear-gradient(135deg, #00D4FF 0%, #A78BFA 50%, #00D4FF 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 4s ease-in-out infinite;
+  }
+
+  .pip-card {
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.08), 0 0 80px rgba(0, 212, 255, 0.04);
+    transition: box-shadow 0.3s ease;
+  }
+  .pip-card:hover {
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.12), 0 0 80px rgba(0, 212, 255, 0.06);
+  }
+
+  .cta-primary {
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+    transition: all 0.2s ease;
+  }
+  .cta-primary:hover {
+    background-color: #00BAE0 !important;
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.3);
+    transform: scale(1.02);
+  }
+
+  .cta-secondary:hover {
+    border-color: #4A5F75 !important;
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+
+  @keyframes wave-bar {
+    from { transform: scaleY(0.4); }
+    to { transform: scaleY(1); }
+  }
+
+  #cta-copy-btn:hover {
+    border-color: #4A5F75 !important;
+    color: #F1F5F9 !important;
+  }
+</style>
+
+<script>
+  const copyBtn = document.getElementById('cta-copy-btn');
+  const copyLabel = document.getElementById('cta-copy-label');
+  const copyIcon = document.getElementById('cta-copy-icon');
+
+  copyBtn?.addEventListener('click', () => {
+    navigator.clipboard.writeText('pip install saja').then(() => {
+      if (copyLabel) copyLabel.textContent = 'Copied!';
+      if (copyIcon) copyIcon.setAttribute('stroke', '#34D399');
+      if (copyBtn) {
+        (copyBtn as HTMLElement).style.borderColor = '#34D399';
+        (copyBtn as HTMLElement).style.color = '#34D399';
+      }
+      setTimeout(() => {
+        if (copyLabel) copyLabel.textContent = 'Copy';
+        if (copyIcon) copyIcon.setAttribute('stroke', 'currentColor');
+        if (copyBtn) {
+          (copyBtn as HTMLElement).style.borderColor = '#2D3F55';
+          (copyBtn as HTMLElement).style.color = '#94A3B8';
+        }
+      }, 1500);
+    });
+  });
+</script>

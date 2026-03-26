@@ -1,0 +1,168 @@
+---
+const GITHUB_URL = 'https://github.com/saja-voice/saja';
+const PYPI_URL = 'https://pypi.org/project/saja/';
+const LICENSE_URL = 'https://github.com/saja-voice/saja/blob/main/LICENSE';
+const CONTRIBUTING_URL = 'https://github.com/saja-voice/saja/blob/main/CONTRIBUTING.md';
+
+const currentYear = new Date().getFullYear();
+
+const resourceLinks = [
+  { label: 'GitHub', href: GITHUB_URL, external: true },
+  { label: 'PyPI', href: PYPI_URL, external: true },
+  { label: 'License', href: LICENSE_URL, external: true },
+];
+
+const communityLinks = [
+  { label: 'Contributing', href: CONTRIBUTING_URL, external: true },
+  { label: 'Docs', href: '#', external: false, disabled: true },
+];
+---
+
+<footer class="py-16 px-6 relative" style="border-top: 1px solid #1E293B;">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+      <!-- Logo + tagline -->
+      <div class="flex flex-col items-center md:items-start gap-3">
+        <a href="/" class="flex items-center gap-3 footer-logo">
+          <img src="/logo.png" alt="SAJA Voice" class="h-7 w-auto" />
+          <span class="font-display font-semibold" style="color: #F1F5F9;">SAJA Voice</span>
+        </a>
+        <p class="text-sm text-center md:text-left" style="color: #3D526B;">
+          Real-time voice agents, open source.
+        </p>
+        <!-- Waveform decoration -->
+        <div class="flex items-end gap-0.5 mt-2">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <div
+              class="rounded-full"
+              style={`
+                width: 2px;
+                height: ${4 + Math.sin(i * 0.5) * 8 + Math.random() * 4}px;
+                background: linear-gradient(to top, #00D4FF, #A78BFA);
+                opacity: 0.25;
+                animation: wave-bar ${1.0 + i * 0.08}s ease-in-out infinite alternate;
+                animation-delay: ${i * 60}ms;
+              `}
+            ></div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Resources -->
+      <div class="flex flex-col items-center md:items-start gap-3">
+        <h4 class="font-display font-semibold text-xs uppercase tracking-widest mb-1" style="color: #3D526B;">
+          Resources
+        </h4>
+        {resourceLinks.map(link => (
+          <a
+            href={link.href}
+            target={link.external ? '_blank' : undefined}
+            rel={link.external ? 'noopener noreferrer' : undefined}
+            class="footer-link text-sm transition-colors relative"
+            style="color: #4A5F75;"
+          >
+            {link.label}
+          </a>
+        ))}
+      </div>
+
+      <!-- Community -->
+      <div class="flex flex-col items-center md:items-start gap-3">
+        <h4 class="font-display font-semibold text-xs uppercase tracking-widest mb-1" style="color: #3D526B;">
+          Community
+        </h4>
+        {communityLinks.map(link => (
+          link.disabled ? (
+            <span
+              class="text-sm cursor-not-allowed"
+              style="color: #1E293B;"
+              title="Coming soon"
+            >
+              {link.label} (soon)
+            </span>
+          ) : (
+            <a
+              href={link.href}
+              target={link.external ? '_blank' : undefined}
+              rel={link.external ? 'noopener noreferrer' : undefined}
+              class="footer-link text-sm transition-colors relative"
+              style="color: #4A5F75;"
+            >
+              {link.label}
+            </a>
+          )
+        ))}
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div
+      class="mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs"
+      style="border-top: 1px solid #0F1923; color: #2D3F55;"
+    >
+      <p>&copy; {currentYear} SAJA Voice contributors. Licensed under Apache 2.0.</p>
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full" style="background-color: #34D399;"></span>
+        <span>Built in public</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Back to top button -->
+  <button
+    id="back-to-top"
+    class="absolute right-6 bottom-6 w-9 h-9 rounded-full border flex items-center justify-center transition-all"
+    style="border-color: #1E293B; color: #3D526B; background-color: rgba(13, 17, 23, 0.8);"
+    aria-label="Back to top"
+  >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  </button>
+</footer>
+
+<style>
+  @keyframes wave-bar {
+    from { transform: scaleY(0.4); }
+    to { transform: scaleY(1); }
+  }
+
+  .footer-logo {
+    transition: filter 0.2s ease;
+  }
+  .footer-logo:hover {
+    filter: brightness(1.15);
+  }
+
+  .footer-link {
+    transition: color 0.2s ease;
+  }
+  .footer-link::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: #00D4FF;
+    transition: width 0.2s ease;
+  }
+  .footer-link:hover {
+    color: #94A3B8 !important;
+  }
+  .footer-link:hover::after {
+    width: 100%;
+  }
+
+  #back-to-top:hover {
+    border-color: #00D4FF !important;
+    color: #00D4FF !important;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.1);
+  }
+</style>
+
+<script>
+  document.getElementById('back-to-top')?.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>

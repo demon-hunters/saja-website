@@ -1,0 +1,209 @@
+---
+const GITHUB_URL = 'https://github.com/saja-voice/saja';
+const PYPI_URL = 'https://pypi.org/project/saja/';
+---
+
+<header id="nav" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" style="background-color: rgba(8, 12, 20, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid transparent;">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-3 nav-logo">
+      <img src="/logo.png" alt="SAJA Voice" class="h-8 w-auto" />
+      <span class="font-display font-semibold text-lg tracking-tight" style="color: #F1F5F9;">
+        SAJA Voice
+      </span>
+    </a>
+
+    <!-- Desktop nav -->
+    <nav class="hidden md:flex items-center gap-1">
+      <!-- Anchor links -->
+      <a href="#pillars" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-all" style="color: #64748B;">
+        Why saja
+      </a>
+      <a href="#code" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-all" style="color: #64748B;">
+        Code
+      </a>
+      <a href="#architecture" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-all" style="color: #64748B;">
+        Architecture
+      </a>
+      <a href="#usecases" class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-all" style="color: #64748B;">
+        Use Cases
+      </a>
+
+      <span class="w-px h-4 mx-3" style="background-color: #1E293B;"></span>
+
+      <span
+        class="text-sm font-medium cursor-not-allowed select-none relative group px-3 py-2"
+        style="color: #2D3F55;"
+        title="Docs coming soon"
+      >
+        Docs
+        <span
+          class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none"
+          style="background-color: #1E293B; color: #94A3B8;"
+        >
+          Coming soon
+        </span>
+      </span>
+
+      <a
+        href={GITHUB_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-all"
+        style="color: #94A3B8;"
+      >
+        GitHub
+      </a>
+
+      <a
+        href={PYPI_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="nav-link px-3 py-2 rounded-md text-sm font-medium transition-all"
+        style="color: #94A3B8;"
+      >
+        PyPI
+      </a>
+
+      <!-- pip install pill with shimmer -->
+      <button
+        id="nav-pip-btn"
+        class="font-mono text-xs px-4 py-2 rounded-lg transition-all border ml-2 relative overflow-hidden animate-shimmer"
+        style="background-color: #0D1117; color: #00D4FF; border-color: #1E293B;"
+        title="Click to copy"
+        aria-label="Copy pip install saja"
+      >
+        pip install saja
+      </button>
+    </nav>
+
+    <!-- Mobile hamburger -->
+    <button
+      id="mobile-menu-btn"
+      class="md:hidden p-2 rounded"
+      style="color: #94A3B8;"
+      aria-label="Toggle menu"
+    >
+      <svg id="hamburger-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile dropdown -->
+  <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 flex flex-col gap-3" style="border-top: 1px solid #1E293B;">
+    <a href="#pillars" class="text-sm pt-4" style="color: #94A3B8;">Why saja</a>
+    <a href="#code" class="text-sm" style="color: #94A3B8;">Code</a>
+    <a href="#architecture" class="text-sm" style="color: #94A3B8;">Architecture</a>
+    <a href="#usecases" class="text-sm" style="color: #94A3B8;">Use Cases</a>
+    <span class="text-sm cursor-not-allowed" style="color: #2D3F55;">Docs (coming soon)</span>
+    <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" class="text-sm" style="color: #94A3B8;">GitHub</a>
+    <a href={PYPI_URL} target="_blank" rel="noopener noreferrer" class="text-sm" style="color: #94A3B8;">PyPI</a>
+    <button
+      id="mobile-pip-btn"
+      class="font-mono text-xs px-3 py-2 rounded-md text-left border w-fit"
+      style="background-color: #0D1117; color: #00D4FF; border-color: #1E293B;"
+    >
+      pip install saja
+    </button>
+  </div>
+</header>
+
+<!-- Spacer for fixed nav -->
+<div class="h-16"></div>
+
+<style>
+  .nav-logo {
+    transition: filter 0.2s ease;
+  }
+  .nav-logo:hover {
+    filter: brightness(1.15);
+  }
+
+  .nav-link:hover {
+    color: #F1F5F9 !important;
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+
+  .nav-link.active {
+    color: #00D4FF !important;
+  }
+
+  #nav-pip-btn:hover {
+    border-color: rgba(0, 212, 255, 0.3) !important;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+  }
+</style>
+
+<script>
+  // Nav scroll behavior — border + shadow
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+      nav?.style.setProperty('border-bottom-color', '#1E293B');
+      nav?.style.setProperty('box-shadow', '0 1px 20px rgba(0,0,0,0.5)');
+    } else {
+      nav?.style.setProperty('border-bottom-color', 'transparent');
+      nav?.style.setProperty('box-shadow', 'none');
+    }
+  });
+
+  // Active section detection
+  const sections = ['pillars', 'code', 'architecture', 'usecases'];
+  const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+
+  const sectionObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          navLinks.forEach(link => {
+            if (link.getAttribute('href') === `#${id}`) {
+              link.classList.add('active');
+            } else {
+              link.classList.remove('active');
+            }
+          });
+        }
+      });
+    },
+    { rootMargin: '-20% 0px -70% 0px' }
+  );
+
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) sectionObserver.observe(el);
+  });
+
+  // Mobile menu toggle
+  const btn = document.getElementById('mobile-menu-btn');
+  const menu = document.getElementById('mobile-menu');
+  btn?.addEventListener('click', () => {
+    menu?.classList.toggle('hidden');
+  });
+
+  // Close mobile menu on link click
+  menu?.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', () => menu?.classList.add('hidden'));
+  });
+
+  // Copy pip install
+  function copyPip() {
+    navigator.clipboard.writeText('pip install saja').then(() => {
+      const btns = [document.getElementById('nav-pip-btn'), document.getElementById('mobile-pip-btn')];
+      btns.forEach(b => {
+        if (b) {
+          const orig = b.textContent;
+          b.textContent = 'Copied!';
+          b.style.color = '#34D399';
+          setTimeout(() => { b.textContent = orig; b.style.color = '#00D4FF'; }, 1500);
+        }
+      });
+    });
+  }
+
+  document.getElementById('nav-pip-btn')?.addEventListener('click', copyPip);
+  document.getElementById('mobile-pip-btn')?.addEventListener('click', copyPip);
+</script>

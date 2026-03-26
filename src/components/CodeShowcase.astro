@@ -1,0 +1,407 @@
+---
+const tabs = [
+  {
+    id: 'basic',
+    label: 'Basic Agent',
+    description: 'Wire up a voice agent with persona and provider preferences in under 20 lines.',
+    code: `from saja.agent import AgentConfig, AgentPersona, AgentProviderConfig
+from saja.agent import AgentFactory, RuntimeSession
+import asyncio
+
+async def main():
+    config = AgentConfig(
+        persona=AgentPersona(
+            name="Aria",
+            system_prompt=(
+                "You are a helpful voice assistant. "
+                "Keep responses concise and natural."
+            ),
+        ),
+        provider=AgentProviderConfig(
+            preferred_stt_provider="deepgram",
+            preferred_llm_provider="claude",
+            preferred_tts_provider="elevenlabs",
+            tts_voice_id="aria",
+        ),
+    )
+
+    session = RuntimeSession(session_id="session-001")
+    agent = await AgentFactory.create_agent(config, session)
+
+    await agent.start()          # begins listening
+    await asyncio.sleep(300)     # run for 5 minutes
+    await agent.stop()
+
+asyncio.run(main())`,
+  },
+  {
+    id: 'tools',
+    label: 'Tool Use',
+    description: 'Attach Python functions as tools — the agent calls them mid-conversation via the LLM tool loop.',
+    code: `from saja.agent import AgentConfig, AgentPersona, AgentProviderConfig
+from saja.agent.core.agency.tools import ToolRegistry, tool
+from saja.agent import AgentFactory, RuntimeSession
+
+# Define tools using the @tool decorator
+@tool(description="Look up current weather for a city")
+def get_weather(city: str) -> dict:
+    # Your implementation here
+    return {"city": city, "temp": "72°F", "condition": "Sunny"}
+
+@tool(description="Schedule an appointment for a caller")
+def book_appointment(name: str, date: str, time: str) -> dict:
+    # Your implementation here
+    return {"status": "confirmed", "ref": "APT-4892"}
+
+# Register tools and attach to config
+registry = ToolRegistry()
+registry.register(get_weather)
+registry.register(book_appointment)
+
+config = AgentConfig(
+    persona=AgentPersona(
+        name="Scheduler",
+        system_prompt=(
+            "You are a scheduling assistant. "
+            "Use your tools to help callers book appointments."
+        ),
+    ),
+    provider=AgentProviderConfig(
+        preferred_llm_provider="claude",
+        preferred_stt_provider="deepgram",
+        preferred_tts_provider="elevenlabs",
+        metadata={"tool_registry": registry},
+    ),
+)
+
+session = RuntimeSession(session_id="session-tools-001")
+agent = await AgentFactory.create_agent(config, session)
+await agent.start()`,
+  },
+  {
+    id: 'multiagent',
+    label: 'Multi-Agent',
+    description: 'A supervisor agent hands off to a specialist mid-call using the delegation protocol.',
+    code: `from saja.agent import AgentConfig, AgentPersona, AgentProviderConfig
+from saja.agent.core.agency.delegation import HandoffRequest
+from saja.agent import AgentFactory, RuntimeSession
+
+# Specialist agent for billing questions
+billing_config = AgentConfig(
+    persona=AgentPersona(
+        name="BillingAgent",
+        system_prompt=(
+            "You are a billing specialist. Handle payment issues, "
+            "refunds, and account balance questions."
+        ),
+    ),
+    provider=AgentProviderConfig(preferred_llm_provider="claude"),
+)
+
+# Supervisor agent that can delegate
+supervisor_config = AgentConfig(
+    persona=AgentPersona(
+        name="Supervisor",
+        system_prompt=(
+            "You are a customer service supervisor. "
+            "For billing questions, hand off to the billing specialist. "
+            "Use the handoff_to_billing tool when needed."
+        ),
+    ),
+    provider=AgentProviderConfig(
+        preferred_llm_provider="claude",
+        preferred_stt_provider="deepgram",
+        preferred_tts_provider="elevenlabs",
+        metadata={
+            "delegate_agents": [billing_config],
+        },
+    ),
+)
+
+session = RuntimeSession(session_id="multi-agent-001")
+supervisor = await AgentFactory.create_agent(supervisor_config, session)
+await supervisor.start()`,
+  },
+  {
+    id: 'telephony',
+    label: 'Telephony',
+    description: 'Connect saja to a Twilio phone call via WebSocket. Plug in your HTTP framework of choice.',
+    code: `from fastapi import FastAPI, WebSocket
+from saja.agent import AgentConfig, AgentPersona, AgentProviderConfig
+from saja.agent import AgentFactory, RuntimeSession
+from saja.agent.core.media.streams.websocket import WebSocketAudioStream
+
+app = FastAPI()
+
+@app.websocket("/twilio/stream/{call_sid}")
+async def twilio_stream(websocket: WebSocket, call_sid: str):
+    await websocket.accept()
+
+    config = AgentConfig(
+        persona=AgentPersona(
+            name="Dispatcher",
+            system_prompt=(
+                "You are a 911 dispatch assistant. "
+                "Gather the caller's location, nature of emergency, "
+                "and any injured parties. Stay calm and clear."
+            ),
+        ),
+        provider=AgentProviderConfig(
+            preferred_stt_provider="deepgram",
+            preferred_llm_provider="claude",
+            preferred_tts_provider="elevenlabs",
+        ),
+    )
+
+    # WebSocket stream adapter bridges Twilio <-> saja
+    stream = WebSocketAudioStream(websocket)
+    session = RuntimeSession(session_id=call_sid)
+
+    agent = await AgentFactory.create_agent(
+        config, session, audio_stream=stream
+    )
+    await agent.start()
+    await stream.wait_until_closed()
+    await agent.stop()`,
+  },
+];
+---
+
+<section id="code" class="py-24 px-6 reveal">
+  <div class="max-w-7xl mx-auto">
+    <!-- Section header -->
+    <div class="text-center mb-12">
+      <p class="text-sm font-medium tracking-widest uppercase mb-3" style="color: #3D526B; letter-spacing: 0.12em;">
+        Code first
+      </p>
+      <h2 class="font-display font-bold" style="font-size: clamp(1.8rem, 3vw, 2.5rem); color: #F1F5F9; letter-spacing: -0.02em;">
+        Simple API. Serious capabilities.
+      </h2>
+    </div>
+
+    <!-- Showcase card -->
+    <div
+      class="code-showcase rounded-2xl overflow-hidden border"
+      style="background-color: #0D1117; border-color: #1E293B;"
+    >
+      <!-- Tab bar -->
+      <div class="flex border-b overflow-x-auto" style="border-color: #1E293B;" id="code-tabs">
+        {tabs.map((tab, i) => (
+          <button
+            class="code-tab px-6 py-4 text-sm font-medium whitespace-nowrap transition-all border-b-2 shrink-0 relative"
+            style={`border-bottom-color: ${i === 0 ? '#00D4FF' : 'transparent'}; color: ${i === 0 ? '#00D4FF' : '#64748B'};`}
+            data-tab={tab.id}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <!-- Tab content panels -->
+      <div class="grid grid-cols-1 lg:grid-cols-5">
+        <!-- Description column -->
+        <div
+          class="lg:col-span-2 p-8 flex flex-col justify-center border-b lg:border-b-0 lg:border-r"
+          style="border-color: #1E293B;"
+          id="code-description"
+        >
+          {tabs.map((tab, i) => (
+            <div
+              class="tab-desc flex flex-col gap-4 transition-opacity duration-200"
+              style={`display: ${i === 0 ? 'flex' : 'none'}; border-left: 2px solid #00D4FF; padding-left: 20px;`}
+              data-for={tab.id}
+            >
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-mono font-bold"
+                style="background-color: rgba(0, 212, 255, 0.1); color: #00D4FF; box-shadow: 0 0 12px rgba(0, 212, 255, 0.1);">
+                {String(i + 1).padStart(2, '0')}
+              </div>
+              <h3 class="font-display font-semibold text-xl" style="color: #F1F5F9;">{tab.label}</h3>
+              <p class="text-sm leading-relaxed" style="color: #64748B;">{tab.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <!-- Code column -->
+        <div class="lg:col-span-3 relative" id="code-panels">
+          <!-- Copy button -->
+          <button
+            id="copy-code-btn"
+            class="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all border"
+            style="background-color: #1E293B; border-color: #2D3F55; color: #94A3B8;"
+            aria-label="Copy code"
+          >
+            <svg id="copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+            <span id="copy-label">Copy</span>
+          </button>
+
+          {tabs.map((tab, i) => {
+            const lines = tab.code.split('\n');
+            return (
+              <div
+                class="code-panel transition-opacity duration-200"
+                style={`display: ${i === 0 ? 'block' : 'none'};`}
+                data-for={tab.id}
+                data-code={tab.code}
+              >
+                <div class="p-5 overflow-x-auto" style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.7;">
+                  {lines.map((line, li) => (
+                    <div class="code-line flex whitespace-pre">
+                      <span class="line-num select-none text-right shrink-0" style="width: 32px; margin-right: 16px; color: #2D3F55; font-size: 0.75rem; border-right: 1px solid #141B26; padding-right: 12px;">
+                        {li + 1}
+                      </span>
+                      <code class="line-code" style="color: #CBD5E1;">{line || '\u200B'}</code>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Tab switching with transitions
+  const tabs = document.querySelectorAll('.code-tab');
+  const panels = document.querySelectorAll('.code-panel');
+  const descs = document.querySelectorAll('.tab-desc');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const id = tab.getAttribute('data-tab');
+
+      tabs.forEach(t => {
+        (t as HTMLElement).style.color = '#64748B';
+        (t as HTMLElement).style.borderBottomColor = 'transparent';
+      });
+      (tab as HTMLElement).style.color = '#00D4FF';
+      (tab as HTMLElement).style.borderBottomColor = '#00D4FF';
+
+      panels.forEach(p => {
+        (p as HTMLElement).style.display = p.getAttribute('data-for') === id ? 'block' : 'none';
+      });
+      descs.forEach(d => {
+        (d as HTMLElement).style.display = d.getAttribute('data-for') === id ? 'flex' : 'none';
+      });
+    });
+  });
+
+  // Copy button
+  const copyBtn = document.getElementById('copy-code-btn');
+  const copyLabel = document.getElementById('copy-label');
+  const copyIcon = document.getElementById('copy-icon');
+
+  copyBtn?.addEventListener('click', () => {
+    const activePanel = document.querySelector('.code-panel[style*="display: block"]') as HTMLElement;
+    const code = activePanel?.getAttribute('data-code') ?? '';
+    navigator.clipboard.writeText(code).then(() => {
+      if (copyLabel) copyLabel.textContent = 'Copied!';
+      if (copyIcon) copyIcon.setAttribute('stroke', '#34D399');
+      setTimeout(() => {
+        if (copyLabel) copyLabel.textContent = 'Copy';
+        if (copyIcon) copyIcon.setAttribute('stroke', 'currentColor');
+      }, 1500);
+    });
+  });
+
+  // Syntax highlighting — uses textContent to avoid HTML entity issues
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlightLine(text: string): string {
+    // Tokenize the line into segments
+    const tokens: { text: string; type: string }[] = [];
+    let remaining = text;
+
+    while (remaining.length > 0) {
+      // Try matching a string
+      let m = remaining.match(/^(["'])(?:(?=(\\?))\2.)*?\1/);
+      if (m) { tokens.push({ text: m[0], type: 'syn-str' }); remaining = remaining.slice(m[0].length); continue; }
+
+      // Try matching a comment
+      m = remaining.match(/^#.*/);
+      if (m) { tokens.push({ text: m[0], type: 'syn-cm' }); remaining = remaining.slice(m[0].length); continue; }
+
+      // Try matching a decorator
+      m = remaining.match(/^@\w+/);
+      if (m) { tokens.push({ text: m[0], type: 'syn-dec' }); remaining = remaining.slice(m[0].length); continue; }
+
+      // Try matching a keyword
+      m = remaining.match(/^(from|import|async|await|def|return|class|if|else|for|in|and|or|not|True|False|None)\b/);
+      if (m) { tokens.push({ text: m[0], type: 'syn-kw' }); remaining = remaining.slice(m[0].length); continue; }
+
+      // Try matching a PascalCase class name
+      m = remaining.match(/^[A-Z][A-Za-z]+/);
+      if (m) { tokens.push({ text: m[0], type: 'syn-cls' }); remaining = remaining.slice(m[0].length); continue; }
+
+      // Default: consume one character
+      tokens.push({ text: remaining[0], type: '' });
+      remaining = remaining.slice(1);
+    }
+
+    return tokens.map(t => {
+      const escaped = escapeHtml(t.text);
+      return t.type ? `<span class="${t.type}">${escaped}</span>` : escaped;
+    }).join('');
+  }
+
+  function applyHighlighting() {
+    document.querySelectorAll('.code-panel .line-code').forEach(block => {
+      const text = block.textContent || '';
+      if (text.trim() || text === '\u200B') {
+        block.innerHTML = highlightLine(text);
+      }
+    });
+  }
+  applyHighlighting();
+</script>
+
+<style>
+  .code-showcase {
+    box-shadow: 0 0 60px rgba(0, 212, 255, 0.06), 0 25px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .syn-kw { color: #7DD3FC; }
+  .syn-cls { color: #FCD34D; }
+  .syn-str { color: #86EFAC; }
+  .syn-cm { color: #4A5F75; font-style: italic; }
+  .syn-dec { color: #FF79C6; }
+  .line-code { color: #CBD5E1; white-space: pre; }
+
+  .code-tab {
+    position: relative;
+  }
+  .code-tab:hover {
+    color: #94A3B8 !important;
+  }
+  .code-tab[style*="color: rgb(0, 212, 255)"]:hover,
+  .code-tab[style*="color:#00D4FF"]:hover {
+    color: #00D4FF !important;
+  }
+
+  /* Active tab glow dot */
+  .code-tab[style*="color: rgb(0, 212, 255)"]::after,
+  .code-tab[style*="#00D4FF"]::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: #00D4FF;
+    box-shadow: 0 0 8px #00D4FF;
+  }
+
+  #copy-code-btn:hover {
+    border-color: #4A5F75 !important;
+    color: #F1F5F9 !important;
+  }
+</style>

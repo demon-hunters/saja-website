@@ -1,0 +1,282 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Phone Numbers" activeSection="numbers">
+  <Fragment slot="topbar-actions">
+    <button class="btn btn-primary" onclick="openBuyModal()">+ Get a Number</button>
+  </Fragment>
+
+  <div class="mb-6">
+    <p class="text-dim text-sm">Provision Twilio phone numbers and assign them to agents. Inbound calls to these numbers will be answered by the assigned agent.</p>
+  </div>
+
+  <!-- Provisioned numbers -->
+  <div class="card" id="numbers-container">
+    <div class="empty-state">
+      <div class="empty-state-icon">⏳</div>
+      <div class="empty-state-title">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Buy number modal -->
+  <div class="modal-backdrop" id="buy-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Get a Phone Number</span>
+        <button class="close-btn" onclick="closeBuyModal()">✕</button>
+      </div>
+
+      <div id="buy-step-1">
+        <div class="form-group">
+          <label class="form-label">Area Code (US)</label>
+          <input class="input" id="area-code" type="text" maxlength="3" placeholder="415" />
+        </div>
+        <button class="btn btn-primary w-full" style="justify-content:center" onclick="searchNumbers()">Search Available Numbers</button>
+      </div>
+
+      <div id="buy-step-2" style="display:none;margin-top:16px">
+        <div class="form-label" style="margin-bottom:10px">Available Numbers</div>
+        <div id="search-results" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+      </div>
+
+      <div id="buy-step-3" style="display:none;margin-top:16px">
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px">
+          <div style="font-size:13px;color:var(--text-dim)">Purchasing</div>
+          <div id="selected-number-display" style="font-size:18px;font-weight:700;letter-spacing:1px"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assign to Agent (optional)</label>
+          <select class="select" id="buy-agent-select">
+            <option value="">— No agent yet —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Friendly Name</label>
+          <input class="input" id="friendly-name" type="text" placeholder="e.g. Sales Line" />
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary flex-1 justify-content-center" onclick="confirmPurchase()">Confirm Purchase</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('buy-step-3').style.display='none';document.getElementById('buy-step-2').style.display='block'">Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign modal -->
+  <div class="modal-backdrop" id="assign-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Assign Agent</span>
+        <button class="close-btn" onclick="closeAssignModal()">✕</button>
+      </div>
+      <div id="assign-number-display" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:16px;font-weight:700;letter-spacing:1px"></div>
+      <div class="form-group">
+        <label class="form-label">Agent</label>
+        <select class="select" id="assign-agent-select">
+          <option value="">— Unassign —</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary flex-1" onclick="confirmAssign()">Save</button>
+        <button class="btn btn-ghost" onclick="closeAssignModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let agents = [];
+    let selectedNumberForBuy = null;
+    let selectedSidForAssign = null;
+
+    async function init() {
+      await Promise.all([loadNumbers(), loadAgents()]);
+    }
+
+    async function loadAgents() {
+      try {
+        const data = await window.apiFetch('/agents');
+        agents = data.agents || [];
+        populateAgentSelects();
+      } catch (e) {
+        agents = [];
+      }
+    }
+
+    function populateAgentSelects() {
+      const opts = '<option value="">— No agent —</option>' +
+        agents.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      document.getElementById('buy-agent-select').innerHTML = opts;
+      document.getElementById('assign-agent-select').innerHTML = opts;
+    }
+
+    async function loadNumbers() {
+      try {
+        const data = await window.apiFetch('/phone-numbers');
+        renderNumbers(data.numbers || []);
+      } catch (e) {
+        document.getElementById('numbers-container').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div class="empty-state-title">Could not load numbers</div>
+            <div class="empty-state-desc">${e.message}<br/>Make sure Twilio credentials are configured in Settings.</div>
+          </div>`;
+      }
+    }
+
+    function renderNumbers(numbers) {
+      if (!numbers.length) {
+        document.getElementById('numbers-container').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📞</div>
+            <div class="empty-state-title">No phone numbers yet</div>
+            <div class="empty-state-desc">Get a number to start receiving calls through your agents.</div>
+            <div style="margin-top:16px"><button class="btn btn-primary" onclick="openBuyModal()">+ Get a Number</button></div>
+          </div>`;
+        return;
+      }
+
+      const agentMap = Object.fromEntries(agents.map(a => [a.id, a.name]));
+
+      document.getElementById('numbers-container').innerHTML = `
+        <div style="padding:0;overflow:hidden">
+          <table class="table">
+            <thead><tr><th>Phone Number</th><th>Friendly Name</th><th>Assigned Agent</th><th>Voice</th><th>Actions</th></tr></thead>
+            <tbody>
+              ${numbers.map(n => `
+                <tr>
+                  <td><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600">${n.phone_number}</span></td>
+                  <td class="text-dim">${n.friendly_name || '—'}</td>
+                  <td>
+                    ${n.agent_id && agentMap[n.agent_id]
+                      ? `<span class="badge badge-green">${agentMap[n.agent_id]}</span>`
+                      : '<span class="text-muted">Unassigned</span>'}
+                  </td>
+                  <td>
+                    ${n.capabilities?.voice
+                      ? '<span class="status-dot green"></span>Enabled'
+                      : '<span class="status-dot gray"></span>Disabled'}
+                  </td>
+                  <td>
+                    <div style="display:flex;gap:6px">
+                      <button class="btn btn-ghost btn-sm" onclick='openAssignModal("${n.sid}","${n.phone_number}","${n.agent_id || ''}")'>Assign</button>
+                      <button class="btn btn-danger btn-sm" onclick='releaseNumber("${n.sid}","${n.phone_number}")'>Release</button>
+                    </div>
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    function openBuyModal() {
+      document.getElementById('buy-step-1').style.display = 'block';
+      document.getElementById('buy-step-2').style.display = 'none';
+      document.getElementById('buy-step-3').style.display = 'none';
+      document.getElementById('buy-modal').classList.add('show');
+    }
+
+    function closeBuyModal() {
+      document.getElementById('buy-modal').classList.remove('show');
+      selectedNumberForBuy = null;
+    }
+
+    async function searchNumbers() {
+      const areaCode = document.getElementById('area-code').value.trim();
+      if (!/^\d{3}$/.test(areaCode)) {
+        window.showToast('Enter a valid 3-digit area code', 'error');
+        return;
+      }
+      try {
+        const data = await window.apiFetch(`/phone-numbers/search?area_code=${areaCode}`);
+        const nums = data.numbers || [];
+        if (!nums.length) {
+          document.getElementById('search-results').innerHTML = '<div class="text-dim" style="padding:12px">No numbers found for this area code.</div>';
+        } else {
+          document.getElementById('search-results').innerHTML = nums.map(n => `
+            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer" onclick='selectNumber("${n.phone_number}")'>
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:15px">${n.phone_number}</div>
+                <div style="font-size:12px;color:var(--text-dim)">${n.locality || ''}${n.locality && n.region ? ', ' : ''}${n.region || ''}</div>
+              </div>
+              <button class="btn btn-primary btn-sm">Select</button>
+            </div>`).join('');
+        }
+        document.getElementById('buy-step-2').style.display = 'block';
+      } catch (e) {
+        window.showToast('Search failed: ' + e.message, 'error');
+      }
+    }
+
+    function selectNumber(num) {
+      selectedNumberForBuy = num;
+      document.getElementById('selected-number-display').textContent = num;
+      document.getElementById('buy-step-2').style.display = 'none';
+      document.getElementById('buy-step-3').style.display = 'block';
+    }
+
+    async function confirmPurchase() {
+      if (!selectedNumberForBuy) return;
+      const agentId = document.getElementById('buy-agent-select').value;
+      const friendlyName = document.getElementById('friendly-name').value.trim();
+      try {
+        await window.apiFetch('/phone-numbers/provision', {
+          method: 'POST',
+          body: JSON.stringify({
+            phone_number: selectedNumberForBuy,
+            agent_id: agentId || undefined,
+            friendly_name: friendlyName || undefined,
+          }),
+        });
+        window.showToast(`${selectedNumberForBuy} provisioned!`, 'success');
+        closeBuyModal();
+        await loadNumbers();
+      } catch (e) {
+        window.showToast('Purchase failed: ' + e.message, 'error');
+      }
+    }
+
+    function openAssignModal(sid, phone, currentAgentId) {
+      selectedSidForAssign = sid;
+      document.getElementById('assign-number-display').textContent = phone;
+      const sel = document.getElementById('assign-agent-select');
+      sel.value = currentAgentId || '';
+      document.getElementById('assign-modal').classList.add('show');
+    }
+
+    function closeAssignModal() {
+      document.getElementById('assign-modal').classList.remove('show');
+    }
+
+    async function confirmAssign() {
+      const agentId = document.getElementById('assign-agent-select').value;
+      try {
+        await window.apiFetch(`/phone-numbers/${selectedSidForAssign}/assign`, {
+          method: 'PUT',
+          body: JSON.stringify({ agent_id: agentId || null }),
+        });
+        window.showToast('Agent assigned', 'success');
+        closeAssignModal();
+        await loadNumbers();
+      } catch (e) {
+        window.showToast('Assign failed: ' + e.message, 'error');
+      }
+    }
+
+    async function releaseNumber(sid, phone) {
+      if (!confirm(`Release ${phone}? This will permanently remove this number from your account.`)) return;
+      try {
+        await window.apiFetch(`/phone-numbers/${sid}`, { method: 'DELETE' });
+        window.showToast(`${phone} released`, 'success');
+        await loadNumbers();
+      } catch (e) {
+        window.showToast('Release failed: ' + e.message, 'error');
+      }
+    }
+
+    document.querySelectorAll('.modal-backdrop').forEach(el =>
+      el.addEventListener('click', e => { if (e.target === e.currentTarget) { el.classList.remove('show'); } })
+    );
+
+    init();
+  </script>
+</DashboardLayout>

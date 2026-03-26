@@ -1,0 +1,221 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Knowledge Base" activeSection="knowledge">
+
+  <div class="mb-6">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">Knowledge Base</h2>
+        <p class="text-dim text-sm">Upload documents that your agents can reference when answering questions. Each agent gets its own isolated knowledge base.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agent selector -->
+  <div class="card mb-4">
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Select Agent</label>
+      <select class="select" id="kb-agent-select" onchange="loadAgentKB()" style="max-width:400px">
+        <option value="">Loading agents...</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Upload area -->
+  <div class="card mb-4" id="upload-section" style="display:none">
+    <div class="card-header">
+      <span class="card-title">Upload Documents</span>
+      <span class="badge badge-gray">PDF · DOCX · TXT · MD</span>
+    </div>
+
+    <div id="drop-zone" style="border:2px dashed var(--border2);border-radius:10px;padding:36px;text-align:center;cursor:pointer;transition:all 0.15s" onclick="document.getElementById('file-input').click()">
+      <div style="font-size:36px;margin-bottom:10px">📤</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">Drop files here or click to browse</div>
+      <div class="text-dim text-sm">PDF, DOCX, TXT, Markdown — up to 20 MB each</div>
+    </div>
+    <input type="file" id="file-input" multiple accept=".pdf,.docx,.txt,.md" style="display:none" onchange="handleFiles(this.files)" />
+
+    <div id="pending-files" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+
+    <div id="upload-actions" style="display:none;margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-primary" id="upload-btn" onclick="uploadFiles()">Upload & Ingest</button>
+      <button class="btn btn-ghost" onclick="clearPending()">Clear</button>
+    </div>
+
+    <hr class="divider" />
+
+    <div>
+      <div class="form-label" style="margin-bottom:10px">Or ingest from URL</div>
+      <div style="display:flex;gap:8px">
+        <input class="input" id="url-input" type="url" placeholder="https://docs.example.com/page" style="flex:1" />
+        <button class="btn btn-primary" onclick="ingestUrl()">Ingest URL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Existing documents -->
+  <div class="card" id="docs-section" style="display:none">
+    <div class="card-header">
+      <span class="card-title">Documents</span>
+      <span class="badge badge-blue" id="chunk-count">0 chunks</span>
+    </div>
+    <div id="docs-list"></div>
+  </div>
+
+  <script>
+    let pendingFiles = [];
+    let selectedAgentId = null;
+
+    async function loadAgents() {
+      try {
+        const data = await window.apiFetch('/agents');
+        const select = document.getElementById('kb-agent-select');
+        const agents = data.agents || [];
+        select.innerHTML = '<option value="">— Select an agent —</option>' +
+          agents.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      } catch (e) {
+        document.getElementById('kb-agent-select').innerHTML = '<option>Error loading agents</option>';
+      }
+    }
+
+    async function loadAgentKB() {
+      selectedAgentId = document.getElementById('kb-agent-select').value;
+      if (!selectedAgentId) {
+        document.getElementById('upload-section').style.display = 'none';
+        document.getElementById('docs-section').style.display = 'none';
+        return;
+      }
+      document.getElementById('upload-section').style.display = 'block';
+      document.getElementById('docs-section').style.display = 'block';
+      await refreshDocs();
+    }
+
+    async function refreshDocs() {
+      if (!selectedAgentId) return;
+      try {
+        const data = await window.apiFetch(`/knowledge/${selectedAgentId}`);
+        const sources = data.sources || [];
+        document.getElementById('chunk-count').textContent = `${data.total_chunks} chunks`;
+
+        if (!sources.length) {
+          document.getElementById('docs-list').innerHTML = `
+            <div class="empty-state" style="padding:28px">
+              <div class="empty-state-icon">📭</div>
+              <div class="empty-state-title">No documents yet</div>
+              <div class="empty-state-desc">Upload files or ingest a URL above to build the agent's knowledge base.</div>
+            </div>`;
+          return;
+        }
+
+        document.getElementById('docs-list').innerHTML = `
+          <table class="table">
+            <thead><tr><th>Source</th><th>Chunks</th><th></th></tr></thead>
+            <tbody>
+              ${sources.map(s => `
+                <tr>
+                  <td>
+                    <div style="font-weight:500">${s.source}</div>
+                  </td>
+                  <td><span class="badge badge-gray">${s.chunks} chunks</span></td>
+                  <td><button class="btn btn-danger btn-sm" onclick="deleteSource('${encodeURIComponent(s.source)}')">Remove</button></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>`;
+      } catch (e) {
+        document.getElementById('docs-list').innerHTML = `<div class="text-dim" style="padding:16px">Could not load documents: ${e.message}</div>`;
+      }
+    }
+
+    function handleFiles(files) {
+      for (const f of files) {
+        if (!pendingFiles.find(p => p.name === f.name)) pendingFiles.push(f);
+      }
+      renderPending();
+    }
+
+    function renderPending() {
+      const el = document.getElementById('pending-files');
+      const actions = document.getElementById('upload-actions');
+      el.innerHTML = pendingFiles.map((f, i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 12px;font-size:13px">
+          <div style="display:flex;align-items:center;gap:8px">📄 ${f.name} <span style="color:var(--text-muted)">${(f.size/1024).toFixed(0)} KB</span></div>
+          <button style="background:none;border:none;cursor:pointer;color:var(--text-dim)" onclick="removePending(${i})">✕</button>
+        </div>`).join('');
+      actions.style.display = pendingFiles.length ? 'flex' : 'none';
+    }
+
+    function removePending(i) { pendingFiles.splice(i,1); renderPending(); }
+    function clearPending() { pendingFiles = []; renderPending(); }
+
+    async function uploadFiles() {
+      if (!selectedAgentId || !pendingFiles.length) return;
+      const btn = document.getElementById('upload-btn');
+      btn.textContent = 'Uploading...';
+      btn.disabled = true;
+
+      try {
+        const form = new FormData();
+        pendingFiles.forEach(f => form.append('files', f));
+        const apiKey = localStorage.getItem('saja_api_key') || '';
+        const headers = {};
+        if (apiKey) headers['X-API-Key'] = apiKey;
+
+        const res = await fetch(`${window.API_BASE}/knowledge/${selectedAgentId}/upload`, {
+          method: 'POST',
+          body: form,
+          headers,
+        });
+        const data = await res.json();
+        const ok = (data.results || []).filter(r => r.status === 'ingested');
+        window.showToast(`Ingested ${ok.length} file(s) successfully`, 'success');
+        clearPending();
+        await refreshDocs();
+      } catch (e) {
+        window.showToast('Upload failed: ' + e.message, 'error');
+      } finally {
+        btn.textContent = 'Upload & Ingest';
+        btn.disabled = false;
+      }
+    }
+
+    async function ingestUrl() {
+      const url = document.getElementById('url-input').value.trim();
+      if (!url || !selectedAgentId) return;
+      try {
+        const data = await window.apiFetch(`/knowledge/${selectedAgentId}/url?url=${encodeURIComponent(url)}`, { method: 'POST' });
+        window.showToast(`Ingested ${data.chunks} chunks from URL`, 'success');
+        document.getElementById('url-input').value = '';
+        await refreshDocs();
+      } catch (e) {
+        window.showToast('URL ingest failed: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteSource(sourceEncoded) {
+      const source = decodeURIComponent(sourceEncoded);
+      if (!confirm(`Remove all content from "${source}"?`)) return;
+      try {
+        await window.apiFetch(`/knowledge/${selectedAgentId}/source?source=${sourceEncoded}`, { method: 'DELETE' });
+        window.showToast('Source removed', 'success');
+        await refreshDocs();
+      } catch (e) {
+        window.showToast('Delete failed: ' + e.message, 'error');
+      }
+    }
+
+    // Drag-and-drop
+    const zone = document.getElementById('drop-zone');
+    if (zone) {
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+      zone.addEventListener('dragleave', () => { zone.style.borderColor = 'var(--border2)'; });
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.style.borderColor = 'var(--border2)';
+        handleFiles(e.dataTransfer.files);
+      });
+    }
+
+    loadAgents();
+  </script>
+</DashboardLayout>

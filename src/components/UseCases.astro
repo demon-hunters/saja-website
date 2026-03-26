@@ -1,0 +1,158 @@
+---
+const cases = [
+  {
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/>
+    </svg>`,
+    color: '#FF5F57',
+    badge: 'Telephony · Multi-agent',
+    title: '911 Emergency Dispatch',
+    desc: 'Route emergency calls intelligently with voice agents that gather incident details and hand off to dispatchers. Battle-tested in production at NG-911 PSAPs.',
+    highlight: true,
+  },
+  {
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+    </svg>`,
+    color: '#00D4FF',
+    badge: 'Telephony · Tools',
+    title: 'Customer Service',
+    desc: 'Replace IVR trees with conversational agents that resolve intent, look up accounts, and escalate to human agents seamlessly.',
+  },
+  {
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </svg>`,
+    color: '#34D399',
+    badge: 'Multi-agent · Workflow',
+    title: 'Medical Triage',
+    desc: 'Gather patient symptoms, apply clinical criteria, and escalate or route based on urgency level. Structured workflow state ensures nothing is missed.',
+  },
+  {
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>`,
+    color: '#A78BFA',
+    badge: 'Observability · Audit',
+    title: 'Identity Verification',
+    desc: 'Conduct voice-based KYC flows with structured Q&A, barge-in handling, and audit-ready session logs with full transcript redaction.',
+  },
+  {
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+      <polyline points="16 7 22 7 22 13"/>
+    </svg>`,
+    color: '#FBBF24',
+    badge: 'Outbound · Telephony',
+    title: 'Outbound Dialing',
+    desc: 'Run automated outbound campaigns with natural conversation, intent detection, and live agent handoff when the moment is right.',
+  },
+  {
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>`,
+    color: '#FB923C',
+    badge: 'Tools · Scheduling',
+    title: 'AI Receptionist',
+    desc: 'Answer calls, schedule appointments, and transfer callers — without IVR menus or hold queues. Integrates with your calendar and CRM via MCP tools.',
+  },
+];
+---
+
+<section id="usecases" class="py-24 px-6 reveal" style="background-color: #060A11;">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-16">
+      <p class="text-sm font-medium tracking-widest uppercase mb-3" style="color: #3D526B; letter-spacing: 0.12em;">
+        Use cases
+      </p>
+      <h2 class="font-display font-bold mb-4" style="font-size: clamp(1.8rem, 3vw, 2.5rem); color: #F1F5F9; letter-spacing: -0.02em;">
+        What developers are building
+      </h2>
+      <p class="text-base max-w-lg mx-auto" style="color: #64748B;">
+        From emergency dispatch to customer service — saja handles the voice infrastructure so you can focus on the domain.
+      </p>
+    </div>
+
+    <!-- Cards grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 reveal-stagger">
+      {cases.map((c) => (
+        <div
+          class={`use-case-card rounded-xl p-7 flex flex-col gap-4 border transition-all duration-300 relative overflow-hidden ${c.highlight ? 'highlighted' : ''}`}
+          style={`background: ${c.highlight ? `radial-gradient(ellipse 50% 50% at 90% 10%, ${c.color}08, transparent 70%), #0F1B2D` : `radial-gradient(ellipse 50% 50% at 90% 10%, ${c.color}06, transparent 70%), #0D1117`}; border-color: ${c.highlight ? 'rgba(255, 95, 87, 0.25)' : '#1E293B'};`}
+          data-color={c.color}
+        >
+          <!-- Watermark icon -->
+          <div class="watermark-icon absolute bottom-2 right-2 opacity-[0.04] pointer-events-none" style={`color: ${c.color}; transform: scale(3);`} set:html={c.icon} />
+
+          <!-- Icon -->
+          <div
+            class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 relative z-10"
+            style={`background-color: ${c.color}15; color: ${c.color}; box-shadow: 0 0 20px ${c.color}12;`}
+            set:html={c.icon}
+          />
+
+          <!-- Badge -->
+          <div class="flex flex-wrap gap-2 relative z-10">
+            {c.badge.split(' · ').map(tag => (
+              <span
+                class="text-xs px-2.5 py-1 rounded-md font-medium"
+                style={`background-color: ${c.color}10; color: ${c.color}; border-left: 2px solid ${c.color}40;`}
+              >
+                {tag}
+              </span>
+            ))}
+            {c.highlight && (
+              <span class="text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1" style="background-color: rgba(255, 95, 87, 0.12); color: #FF5F57; border-left: 2px solid rgba(255, 95, 87, 0.4);">
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background-color: #FF5F57;"></span>
+                Production
+              </span>
+            )}
+          </div>
+
+          <!-- Content -->
+          <div class="flex flex-col gap-2 relative z-10">
+            <h3 class="font-display font-semibold text-lg" style="color: #F1F5F9;">{c.title}</h3>
+            <p class="text-sm leading-relaxed" style="color: #64748B;">{c.desc}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .use-case-card {
+    transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .use-case-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .use-case-card:hover .watermark-icon {
+    opacity: 0.08 !important;
+    transition: opacity 0.3s ease;
+  }
+
+  .use-case-card[data-color="#FF5F57"]:hover { border-color: rgba(255, 95, 87, 0.35) !important; box-shadow: 0 8px 30px rgba(255, 95, 87, 0.1); }
+  .use-case-card[data-color="#00D4FF"]:hover { border-color: rgba(0, 212, 255, 0.25) !important; box-shadow: 0 8px 30px rgba(0, 212, 255, 0.08); }
+  .use-case-card[data-color="#34D399"]:hover { border-color: rgba(52, 211, 153, 0.25) !important; box-shadow: 0 8px 30px rgba(52, 211, 153, 0.08); }
+  .use-case-card[data-color="#A78BFA"]:hover { border-color: rgba(167, 139, 250, 0.25) !important; box-shadow: 0 8px 30px rgba(167, 139, 250, 0.08); }
+  .use-case-card[data-color="#FBBF24"]:hover { border-color: rgba(251, 191, 36, 0.25) !important; box-shadow: 0 8px 30px rgba(251, 191, 36, 0.08); }
+  .use-case-card[data-color="#FB923C"]:hover { border-color: rgba(251, 146, 60, 0.25) !important; box-shadow: 0 8px 30px rgba(251, 146, 60, 0.08); }
+
+  .highlighted {
+    animation: border-pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes border-pulse {
+    0%, 100% { border-color: rgba(255, 95, 87, 0.2); }
+    50% { border-color: rgba(255, 95, 87, 0.35); }
+  }
+</style>

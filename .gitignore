@@ -1,0 +1,22 @@
+# Astro
+dist/
+.astro/
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+*.log
+
+# Editors
+.DS_Store
+.idea/
+.vscode/
+
+# Claude
+.claude/

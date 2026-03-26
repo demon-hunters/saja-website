@@ -1,0 +1,299 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Tool Catalog" activeSection="tools">
+
+  <div class="mb-6">
+    <p class="text-dim text-sm">Connect pre-built integrations to your agents. Each tool adds capabilities your agent can use during voice calls — no MCP code required.</p>
+  </div>
+
+  <!-- Filter tabs -->
+  <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap" id="category-tabs"></div>
+
+  <!-- Tool grid -->
+  <div id="tool-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+
+  <!-- Tool detail modal -->
+  <div class="modal-backdrop" id="tool-modal">
+    <div class="modal" style="max-width:600px">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="modal-icon" style="font-size:28px"></span>
+          <div>
+            <div class="modal-title" id="modal-title"></div>
+            <div class="text-dim text-sm" id="modal-provider"></div>
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeToolModal()">✕</button>
+      </div>
+
+      <p class="text-dim text-sm mb-4" id="modal-desc"></p>
+
+      <div class="mb-4">
+        <div class="form-label" style="margin-bottom:8px">Tools Included</div>
+        <div id="modal-tools" style="display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+
+      <div id="modal-config-section">
+        <hr class="divider" />
+        <div class="form-label" style="margin-bottom:8px">Configuration</div>
+        <div id="modal-fields"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-primary flex-1" id="modal-connect-btn" style="justify-content:center">Connect</button>
+        <button class="btn btn-ghost" onclick="closeToolModal()">Cancel</button>
+      </div>
+
+      <div id="modal-success" style="display:none;margin-top:16px">
+        <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:12px;font-size:13.5px;color:var(--green)">
+          ✅ Integration configured! Assign this tool to an agent in the <a href="/dashboard/builder" style="color:var(--green)">Agent Builder</a>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CATALOG = [
+      {
+        id: 'google_calendar',
+        name: 'Google Calendar',
+        icon: '📅',
+        category: 'Scheduling',
+        provider: 'Google',
+        description: 'Read and write calendar events, check availability, find free time slots, and schedule appointments directly during a call.',
+        tools: ['list_upcoming_events','create_event','update_event','delete_event','find_free_slots','check_availability'],
+        fields: [
+          { id: 'gc_credentials', label: 'Service Account JSON', type: 'textarea', placeholder: '{"type":"service_account","project_id":...}', env: 'GOOGLE_CALENDAR_CREDENTIALS' },
+          { id: 'gc_calendar_id', label: 'Calendar ID', type: 'text', placeholder: 'primary', default: 'primary' },
+        ],
+        envKey: 'GOOGLE_CALENDAR_CREDENTIALS',
+        status: 'available',
+      },
+      {
+        id: 'hubspot',
+        name: 'HubSpot CRM',
+        icon: '🏢',
+        category: 'CRM',
+        provider: 'HubSpot',
+        description: 'Search contacts, create deals, log call notes, and move opportunities through your pipeline during outbound sales calls.',
+        tools: ['search_contact','create_contact','update_contact','create_deal','update_deal_stage','add_note','get_deal_stages'],
+        fields: [
+          { id: 'hs_api_key', label: 'Private App Access Token', type: 'password', placeholder: 'pat-na1-...', env: 'HUBSPOT_API_KEY' },
+          { id: 'hs_pipeline', label: 'Pipeline ID', type: 'text', placeholder: 'default', default: 'default' },
+        ],
+        envKey: 'HUBSPOT_API_KEY',
+        status: 'available',
+      },
+      {
+        id: 'stripe',
+        name: 'Stripe',
+        icon: '💳',
+        category: 'Billing',
+        provider: 'Stripe',
+        description: 'Look up customers, check subscription status, view invoices, create payment links, and manage billing during support calls.',
+        tools: ['get_customer','create_customer','get_subscription','list_invoices','create_payment_link','apply_coupon','cancel_subscription'],
+        fields: [
+          { id: 'stripe_key', label: 'Secret API Key', type: 'password', placeholder: 'sk_live_...', env: 'STRIPE_API_KEY' },
+        ],
+        envKey: 'STRIPE_API_KEY',
+        status: 'available',
+      },
+      {
+        id: 'calendly',
+        name: 'Calendly',
+        icon: '🗓️',
+        category: 'Scheduling',
+        provider: 'Calendly',
+        description: 'Share scheduling links and create one-off meetings via Calendly. Perfect for outbound calls where you want to book a follow-up.',
+        tools: ['get_user','list_event_types','create_scheduling_link','get_scheduled_events'],
+        fields: [
+          { id: 'calendly_token', label: 'Personal Access Token', type: 'password', placeholder: 'eyJhbGc...', env: 'CALENDLY_TOKEN' },
+        ],
+        envKey: 'CALENDLY_TOKEN',
+        status: 'coming_soon',
+      },
+      {
+        id: 'slack',
+        name: 'Slack',
+        icon: '💬',
+        category: 'Messaging',
+        provider: 'Slack',
+        description: 'Send messages to Slack channels or users at the end of calls — e.g. notify your team of a new lead or support escalation.',
+        tools: ['send_message','send_dm','list_channels'],
+        fields: [
+          { id: 'slack_token', label: 'Bot Token', type: 'password', placeholder: 'xoxb-...', env: 'SLACK_BOT_TOKEN' },
+          { id: 'slack_channel', label: 'Default Channel', type: 'text', placeholder: '#sales-notifications' },
+        ],
+        envKey: 'SLACK_BOT_TOKEN',
+        status: 'coming_soon',
+      },
+      {
+        id: 'salesforce',
+        name: 'Salesforce',
+        icon: '☁️',
+        category: 'CRM',
+        provider: 'Salesforce',
+        description: 'Search accounts, create leads, log activities, and update opportunities in Salesforce during or after sales calls.',
+        tools: ['search_account','create_lead','update_opportunity','log_call_activity'],
+        fields: [
+          { id: 'sf_client_id', label: 'Client ID', type: 'text', placeholder: '3MVG9...' },
+          { id: 'sf_client_secret', label: 'Client Secret', type: 'password', placeholder: '' },
+          { id: 'sf_username', label: 'Username', type: 'text', placeholder: 'admin@yourorg.salesforce.com' },
+          { id: 'sf_password', label: 'Password + Security Token', type: 'password', placeholder: '' },
+        ],
+        envKey: 'SALESFORCE_CLIENT_ID',
+        status: 'coming_soon',
+      },
+      {
+        id: 'notion',
+        name: 'Notion',
+        icon: '📝',
+        category: 'Productivity',
+        provider: 'Notion',
+        description: 'Create pages, update databases, and log meeting notes directly into Notion during or after calls.',
+        tools: ['create_page','update_page','query_database','append_blocks'],
+        fields: [
+          { id: 'notion_token', label: 'Integration Token', type: 'password', placeholder: 'secret_...', env: 'NOTION_TOKEN' },
+          { id: 'notion_db', label: 'Database ID (optional)', type: 'text', placeholder: '' },
+        ],
+        envKey: 'NOTION_TOKEN',
+        status: 'coming_soon',
+      },
+      {
+        id: 'webhook',
+        name: 'Custom Webhook',
+        icon: '🔗',
+        category: 'Custom',
+        provider: 'Custom',
+        description: 'Call any HTTP endpoint when the agent decides to take an action. Works with Zapier, Make, n8n, or any custom API.',
+        tools: ['call_webhook'],
+        fields: [
+          { id: 'webhook_url', label: 'Webhook URL', type: 'url', placeholder: 'https://your-api.com/action' },
+          { id: 'webhook_method', label: 'HTTP Method', type: 'select', options: ['POST','GET','PUT'], default: 'POST' },
+          { id: 'webhook_secret', label: 'Secret Header (optional)', type: 'password', placeholder: 'Used in X-Webhook-Secret' },
+        ],
+        status: 'available',
+      },
+    ];
+
+    const categories = ['All', ...new Set(CATALOG.map(t => t.category))];
+    let activeCategory = 'All';
+    let currentTool = null;
+
+    function renderCategoryTabs() {
+      document.getElementById('category-tabs').innerHTML = categories.map(c => `
+        <button class="btn ${c === activeCategory ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="filterCategory('${c}')">${c}</button>
+      `).join('');
+    }
+
+    function filterCategory(cat) {
+      activeCategory = cat;
+      renderCategoryTabs();
+      renderTools();
+    }
+
+    function renderTools() {
+      const filtered = activeCategory === 'All' ? CATALOG : CATALOG.filter(t => t.category === activeCategory);
+      document.getElementById('tool-grid').innerHTML = filtered.map(tool => {
+        const isConnected = !!localStorage.getItem(`saja_tool_${tool.id}`);
+        const isComingSoon = tool.status === 'coming_soon';
+        return `
+          <div class="card" style="cursor:${isComingSoon ? 'default' : 'pointer'};transition:border-color 0.15s;opacity:${isComingSoon ? 0.6 : 1}"
+            ${!isComingSoon ? `onclick='openToolModal("${tool.id}")'` : ''}
+            onmouseover="if(!${isComingSoon}) this.style.borderColor='var(--border2)'"
+            onmouseout="this.style.borderColor='var(--border)'">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:24px">${tool.icon}</span>
+                <div>
+                  <div style="font-weight:600;font-size:14px">${tool.name}</div>
+                  <div class="text-muted text-sm">${tool.provider} · ${tool.category}</div>
+                </div>
+              </div>
+              ${isConnected ? '<span class="badge badge-green">Connected</span>' : ''}
+              ${isComingSoon ? '<span class="badge badge-gray">Soon</span>' : ''}
+            </div>
+            <div class="text-dim text-sm" style="line-height:1.5;margin-bottom:10px">${tool.description}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              ${tool.tools.slice(0,3).map(t => `<span class="badge badge-gray" style="font-family:'JetBrains Mono',monospace;font-size:11px">${t}</span>`).join('')}
+              ${tool.tools.length > 3 ? `<span class="badge badge-gray">+${tool.tools.length - 3} more</span>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function openToolModal(toolId) {
+      const tool = CATALOG.find(t => t.id === toolId);
+      if (!tool) return;
+      currentTool = tool;
+
+      document.getElementById('modal-icon').textContent = tool.icon;
+      document.getElementById('modal-title').textContent = tool.name;
+      document.getElementById('modal-provider').textContent = tool.provider + ' · ' + tool.category;
+      document.getElementById('modal-desc').textContent = tool.description;
+      document.getElementById('modal-success').style.display = 'none';
+
+      document.getElementById('modal-tools').innerHTML = tool.tools.map(t => `
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface2);border-radius:6px;padding:6px 10px;color:var(--text-dim)">
+          🔧 ${t}
+        </div>`).join('');
+
+      const isConnected = !!localStorage.getItem(`saja_tool_${tool.id}`);
+      const saved = isConnected ? JSON.parse(localStorage.getItem(`saja_tool_${tool.id}`) || '{}') : {};
+
+      document.getElementById('modal-fields').innerHTML = (tool.fields || []).map(f => {
+        const val = saved[f.id] || f.default || '';
+        if (f.type === 'textarea') return `
+          <div class="form-group">
+            <label class="form-label">${f.label}</label>
+            <textarea class="textarea" id="field-${f.id}" placeholder="${f.placeholder || ''}" style="min-height:100px;font-family:'JetBrains Mono',monospace;font-size:12px">${val}</textarea>
+          </div>`;
+        if (f.type === 'select') return `
+          <div class="form-group">
+            <label class="form-label">${f.label}</label>
+            <select class="select" id="field-${f.id}">
+              ${(f.options||[]).map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}
+            </select>
+          </div>`;
+        return `
+          <div class="form-group">
+            <label class="form-label">${f.label} ${f.env ? `<span class="text-muted" style="font-weight:400;text-transform:none">(or set ${f.env} env var)</span>` : ''}</label>
+            <input class="input" id="field-${f.id}" type="${f.type}" placeholder="${f.placeholder || ''}" value="${val}" />
+          </div>`;
+      }).join('');
+
+      const btn = document.getElementById('modal-connect-btn');
+      btn.textContent = isConnected ? 'Update Configuration' : 'Connect';
+
+      document.getElementById('tool-modal').classList.add('show');
+      btn.onclick = saveToolConfig;
+    }
+
+    function saveToolConfig() {
+      if (!currentTool) return;
+      const config = {};
+      (currentTool.fields || []).forEach(f => {
+        const el = document.getElementById(`field-${f.id}`);
+        if (el) config[f.id] = el.value;
+      });
+      localStorage.setItem(`saja_tool_${currentTool.id}`, JSON.stringify(config));
+      document.getElementById('modal-success').style.display = 'block';
+      document.getElementById('modal-connect-btn').textContent = 'Update Configuration';
+      renderTools();
+      window.showToast(`${currentTool.name} connected!`, 'success');
+    }
+
+    function closeToolModal() {
+      document.getElementById('tool-modal').classList.remove('show');
+      currentTool = null;
+    }
+
+    document.getElementById('tool-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeToolModal();
+    });
+
+    renderCategoryTabs();
+    renderTools();
+  </script>
+</DashboardLayout>

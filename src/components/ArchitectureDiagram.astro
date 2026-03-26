@@ -1,0 +1,219 @@
+---
+const GITHUB_URL = 'https://github.com/saja-voice/saja/blob/main/saja/agent/core/ARCHITECTURE.md';
+
+const layers = [
+  {
+    id: 'transport',
+    label: 'Transport',
+    sublabel: 'Your app · WebSocket · Telephony · WebRTC · Desktop',
+    color: '#94A3B8',
+    bgColor: 'rgba(148, 163, 184, 0.06)',
+    tooltip: 'Any transport connects to saja. HTTP servers, WebSocket bridges, Twilio telephony, or local audio streams all feed into the same runtime.',
+    stageLabel: 'audio in',
+    cols: 1,
+  },
+  {
+    id: 'perception',
+    label: 'Perception · Engagement · Expression',
+    sublabel: 'SpeechRecognizer (STT) · TurnManager · SpeechSynthesizer (TTS)',
+    color: '#00D4FF',
+    bgColor: 'rgba(0, 212, 255, 0.06)',
+    tooltip: 'Audio in → transcript via STT. Turn-taking, barge-in, and duplex pause coordination. Assistant text → audio out via TTS.',
+    stageLabel: 'transcript',
+    cols: 3,
+    sub: [
+      { label: 'Perceive', sub: 'STT · Audio in', color: '#00D4FF' },
+      { label: 'Engage', sub: 'Turn · Barge-in', color: '#38BDF8' },
+      { label: 'Express', sub: 'TTS · Audio out', color: '#00D4FF' },
+    ],
+  },
+  {
+    id: 'cognition',
+    label: 'Cognition · Memory',
+    sublabel: 'ReasoningEngine (LLM loop) · SessionContextProjector',
+    color: '#A78BFA',
+    bgColor: 'rgba(167, 139, 250, 0.06)',
+    tooltip: 'ReasoningEngine runs the plan → execute → compose loop. SessionContextProjector maintains rolling prompt context, history, and workflow state.',
+    stageLabel: 'intent + tools',
+    cols: 2,
+    sub: [
+      { label: 'Cognition', sub: 'LLM · Planning · Tools', color: '#A78BFA' },
+      { label: 'Memory', sub: 'Session · Workflow · State', color: '#C084FC' },
+    ],
+  },
+  {
+    id: 'agency',
+    label: 'Judgment & Agency',
+    sublabel: 'PolicyMiddleware · ToolRegistry · MCP · Delegation',
+    color: '#FBBF24',
+    bgColor: 'rgba(251, 191, 36, 0.06)',
+    tooltip: 'Policy hooks intercept prompt, LLM, tool, and output boundaries for guardrails and redaction. Agency layer exposes tools, MCP protocol adapters, and multi-agent handoffs.',
+    stageLabel: 'policy check',
+    cols: 1,
+  },
+  {
+    id: 'observability',
+    label: 'Observability',
+    sublabel: 'SessionLogger · UsageTracker · EventPublisher · CommandProcessor',
+    color: '#34D399',
+    bgColor: 'rgba(52, 211, 153, 0.06)',
+    tooltip: 'Every turn is logged. Every LLM/STT/TTS call is tracked for cost and usage. Runtime events and operator commands flow through typed contracts.',
+    stageLabel: 'logs + metrics',
+    cols: 1,
+  },
+];
+
+const pipelineStages = [
+  { label: 'Audio in', color: '#94A3B8' },
+  { label: 'Transcript', color: '#00D4FF' },
+  { label: 'Reasoning', color: '#A78BFA' },
+  { label: 'Synthesis', color: '#FBBF24' },
+  { label: 'Audio out', color: '#34D399' },
+];
+---
+
+<section id="architecture" class="py-24 px-6 reveal" style="background-color: #070B12;">
+  <div class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-16">
+      <p class="text-sm font-medium tracking-widest uppercase mb-3" style="color: #3D526B; letter-spacing: 0.12em;">
+        Architecture
+      </p>
+      <h2 class="font-display font-bold mb-4" style="font-size: clamp(1.8rem, 3vw, 2.5rem); color: #F1F5F9; letter-spacing: -0.02em;">
+        One pipeline. Every layer has a job.
+      </h2>
+      <p class="text-base max-w-xl mx-auto" style="color: #64748B;">
+        Each module has a narrow, well-defined role. Transport doesn't think. Reasoning doesn't manage microphones. Observability doesn't produce responses.
+      </p>
+    </div>
+
+    <!-- Architecture stack -->
+    <div class="arch-stack flex flex-col relative">
+      <!-- Animated data packet -->
+      <div class="arch-packet absolute left-1/2 -translate-x-1/2 w-1 h-1 rounded-full z-20 pointer-events-none" style="background: #00D4FF; box-shadow: 0 0 8px #00D4FF, 0 0 16px rgba(0, 212, 255, 0.3); animation: packet-flow 4s ease-in-out infinite;"></div>
+
+      <!-- Connector line -->
+      <div class="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px pointer-events-none" style="background: linear-gradient(to bottom, transparent, rgba(0, 212, 255, 0.12) 10%, rgba(167, 139, 250, 0.12) 50%, rgba(52, 211, 153, 0.12) 90%, transparent); z-index: 0;"></div>
+
+      {layers.map((layer, idx) => (
+        <Fragment>
+          <div
+            class="arch-layer rounded-xl p-5 border transition-all duration-300 relative z-10 cursor-default group"
+            style={`background-color: ${layer.bgColor}; border-color: ${layer.color}18;`}
+            data-tooltip={layer.tooltip}
+            data-color={layer.color}
+          >
+            {/* Stage label — left side, hidden on mobile */}
+            <span class="arch-stage-label hidden lg:block absolute text-right" style={`right: calc(100% + 16px); top: 50%; transform: translateY(-50%); font-size: 10px; color: #2D3F55; font-family: 'JetBrains Mono', monospace; white-space: nowrap;`}>
+              {layer.stageLabel}
+            </span>
+
+            {layer.sub ? (
+              <div class="grid gap-2" style={`grid-template-columns: repeat(${layer.sub.length}, 1fr);`}>
+                {layer.sub.map((s) => (
+                  <div class="flex flex-col items-center text-center py-3 px-3 rounded-lg transition-all duration-200" style={`background-color: ${s.color}0A;`}>
+                    <span class="font-display font-semibold text-sm mb-0.5" style={`color: ${s.color};`}>{s.label}</span>
+                    <span class="text-xs" style="color: #64748B;">{s.sub}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <div class="flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full shrink-0" style={`background-color: ${layer.color};`}></div>
+                  <span class="font-display font-semibold" style={`color: ${layer.color};`}>{layer.label}</span>
+                </div>
+                <span class="text-xs pl-5 sm:pl-0" style="color: #4A5F75; font-family: 'JetBrains Mono', monospace;">{layer.sublabel}</span>
+              </div>
+            )}
+
+            <!-- Tooltip -->
+            <div
+              class="tooltip absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full px-4 py-3 rounded-lg text-sm leading-snug max-w-sm text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
+              style="background-color: #1E293B; color: #CBD5E1; border: 1px solid #2D3F55; box-shadow: 0 8px 24px rgba(0,0,0,0.4);"
+            >
+              {layer.tooltip}
+              <div class="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0" style="border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #2D3F55;"></div>
+            </div>
+          </div>
+
+          {/* Flow arrow between layers */}
+          {idx < layers.length - 1 && (
+            <div class="flex justify-center py-1 z-10 relative">
+              <svg width="12" height="16" viewBox="0 0 12 16" fill="none" class="flow-arrow" style={`animation: flow-pulse 2s ease-in-out infinite; animation-delay: ${idx * 400}ms;`}>
+                <path d="M6 0L6 12M2 8L6 12L10 8" stroke={`url(#arrow-grad-${idx})`} stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                  <linearGradient id={`arrow-grad-${idx}`} x1="6" y1="0" x2="6" y2="12" gradientUnits="userSpaceOnUse">
+                    <stop stop-color={layers[idx].color}/>
+                    <stop offset="1" stop-color={layers[idx + 1].color}/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          )}
+        </Fragment>
+      ))}
+    </div>
+
+    <!-- Pipeline visualization -->
+    <div class="flex flex-wrap items-center justify-center gap-2 mt-8">
+      {pipelineStages.map((stage, i) => (
+        <Fragment>
+          <span
+            class="text-xs px-3 py-1.5 rounded-full font-medium"
+            style={`background-color: ${stage.color}12; color: ${stage.color}; border: 1px solid ${stage.color}20;`}
+          >
+            {stage.label}
+          </span>
+          {i < pipelineStages.length - 1 && (
+            <svg width="16" height="8" viewBox="0 0 16 8" fill="none" style="color: #2D3F55;">
+              <path d="M0 4H12M9 1L12 4L9 7" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          )}
+        </Fragment>
+      ))}
+    </div>
+
+    <!-- Link to full architecture doc -->
+    <div class="text-center mt-8">
+      <a
+        href={GITHUB_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="arch-link inline-flex items-center gap-2 text-sm transition-colors"
+        style="color: #3D526B;"
+      >
+        Read the full architecture docs
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .arch-layer {
+    transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .arch-layer:hover {
+    transform: scale(1.015);
+  }
+
+  .arch-layer[data-color="#94A3B8"]:hover { border-color: rgba(148, 163, 184, 0.3) !important; box-shadow: 0 0 25px rgba(148, 163, 184, 0.08), inset 0 0 25px rgba(148, 163, 184, 0.02); }
+  .arch-layer[data-color="#00D4FF"]:hover { border-color: rgba(0, 212, 255, 0.3) !important; box-shadow: 0 0 25px rgba(0, 212, 255, 0.08), inset 0 0 25px rgba(0, 212, 255, 0.02); }
+  .arch-layer[data-color="#A78BFA"]:hover { border-color: rgba(167, 139, 250, 0.3) !important; box-shadow: 0 0 25px rgba(167, 139, 250, 0.08), inset 0 0 25px rgba(167, 139, 250, 0.02); }
+  .arch-layer[data-color="#FBBF24"]:hover { border-color: rgba(251, 191, 36, 0.3) !important; box-shadow: 0 0 25px rgba(251, 191, 36, 0.08), inset 0 0 25px rgba(251, 191, 36, 0.02); }
+  .arch-layer[data-color="#34D399"]:hover { border-color: rgba(52, 211, 153, 0.3) !important; box-shadow: 0 0 25px rgba(52, 211, 153, 0.08), inset 0 0 25px rgba(52, 211, 153, 0.02); }
+
+  .arch-link:hover {
+    color: #00D4FF !important;
+  }
+
+  @media (max-width: 640px) {
+    .tooltip {
+      display: none;
+    }
+  }
+</style>

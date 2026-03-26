@@ -1,0 +1,433 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Workflow Builder" activeSection="workflows">
+  <Fragment slot="topbar-actions">
+    <button class="btn btn-ghost btn-sm" onclick="importWorkflow()">Import JSON</button>
+    <button class="btn btn-primary" onclick="exportWorkflow()">Export</button>
+  </Fragment>
+
+  <div class="mb-4">
+    <p class="text-dim text-sm">Design multi-stage workflows that control which tools are available at each step of a conversation. Export as a Python config to wire into your agent preset.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start">
+
+    <!-- Left panel: stage list + controls -->
+    <div>
+      <div class="card mb-4">
+        <div class="card-header">
+          <span class="card-title">Stages</span>
+          <button class="btn btn-primary btn-sm" onclick="addStage()">+ Add Stage</button>
+        </div>
+        <div id="stage-list" style="display:flex;flex-direction:column;gap:6px;min-height:60px"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title mb-4" style="margin-bottom:12px">Workflow Settings</div>
+        <div class="form-group">
+          <label class="form-label">Workflow Name</label>
+          <input class="input" id="wf-name" type="text" placeholder="e.g. sales_qualification" value="my_workflow" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Initial Stage</label>
+          <select class="select" id="wf-initial" onchange="updatePreview()"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Checkpoint Store (optional)</label>
+          <input class="input" id="wf-checkpoint" type="text" placeholder="./data/workflow.db" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel: stage editor + preview -->
+    <div>
+      <!-- Stage editor -->
+      <div class="card mb-4" id="stage-editor" style="display:none">
+        <div class="card-header">
+          <span class="card-title" id="editor-title">Edit Stage</span>
+          <button class="btn btn-danger btn-sm" onclick="deleteCurrentStage()">Delete Stage</button>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Stage ID</label>
+            <input class="input" id="s-id" type="text" placeholder="e.g. qualification" onchange="syncStageId()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stage Label</label>
+            <input class="input" id="s-label" type="text" placeholder="e.g. Qualify Lead" oninput="syncStageLabel()" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description (for LLM context)</label>
+          <textarea class="textarea" id="s-desc" placeholder="What should the agent do in this stage?" style="min-height:70px" oninput="updatePreview()"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Allowed Tools <span class="text-muted" style="font-weight:400;text-transform:none">(comma-separated)</span></label>
+          <input class="input" id="s-tools" type="text" placeholder="e.g. search_contact, create_deal, check_availability" oninput="updatePreview()" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Transitions To <span class="text-muted" style="font-weight:400;text-transform:none">(stages this can advance to)</span></label>
+          <div id="s-transitions" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+          <button class="btn btn-ghost btn-sm" onclick="addTransition()">+ Add Transition</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Requires Approval</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;color:var(--text-dim)">
+            <input type="checkbox" id="s-approval" style="accent-color:var(--accent)" onchange="updatePreview()" />
+            Pause at this stage and wait for operator approval before advancing
+          </label>
+        </div>
+      </div>
+
+      <div class="card" id="empty-editor" style="text-align:center;padding:36px;color:var(--text-muted)">
+        <div style="font-size:32px;margin-bottom:10px">⚡</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-dim);margin-bottom:6px">Select a stage to edit it</div>
+        <div style="font-size:13px">Add your first stage from the panel on the left.</div>
+      </div>
+
+      <!-- Generated code preview -->
+      <div class="card mt-4" style="margin-top:14px">
+        <div class="card-header">
+          <span class="card-title">Generated Config</span>
+          <button class="btn btn-ghost btn-sm" onclick="copyPreview()">Copy</button>
+        </div>
+        <pre id="code-preview" style="background:var(--surface2);border-radius:8px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);overflow-x:auto;white-space:pre;max-height:360px;overflow-y:auto">
+# Add a stage to see the generated config.
+        </pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export modal -->
+  <div class="modal-backdrop" id="export-modal">
+    <div class="modal" style="max-width:700px">
+      <div class="modal-header">
+        <span class="modal-title">Export Workflow Config</span>
+        <button class="close-btn" onclick="closeExport()">✕</button>
+      </div>
+      <p class="text-dim text-sm mb-4">Copy this Python code into your preset's <code>workflow.py</code> file. See the <a href="/dashboard/builder" style="color:var(--accent)">Agent Builder</a> to create an agent with this workflow.</p>
+      <pre id="export-content" style="background:var(--surface2);border-radius:8px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);overflow-x:auto;white-space:pre;max-height:440px;overflow-y:auto"></pre>
+      <button class="btn btn-primary w-full" style="margin-top:12px;justify-content:center" onclick="copyExport()">Copy to Clipboard</button>
+    </div>
+  </div>
+
+  <!-- Import modal -->
+  <div class="modal-backdrop" id="import-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Import Workflow JSON</span>
+        <button class="close-btn" onclick="document.getElementById('import-modal').classList.remove('show')">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Paste Workflow JSON</label>
+        <textarea class="textarea" id="import-json" style="min-height:200px;font-family:'JetBrains Mono',monospace;font-size:12px" placeholder='{"name":"my_workflow","stages":[...]}'></textarea>
+      </div>
+      <button class="btn btn-primary w-full" style="justify-content:center" onclick="doImport()">Import</button>
+    </div>
+  </div>
+
+  <script>
+    let stages = [];
+    let currentStageIdx = null;
+
+    function makeStage(label, id) {
+      return {
+        id: id || label.toLowerCase().replace(/\s+/g, '_'),
+        label: label,
+        description: '',
+        allowed_tools: [],
+        transitions: [],
+        requires_approval: false,
+      };
+    }
+
+    function addStage() {
+      const idx = stages.length;
+      const stage = makeStage(`Stage ${idx + 1}`);
+      stages.push(stage);
+      renderStageList();
+      selectStage(idx);
+      updateInitialSelect();
+      updatePreview();
+    }
+
+    function renderStageList() {
+      document.getElementById('stage-list').innerHTML = stages.length
+        ? stages.map((s, i) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;background:${currentStageIdx===i ? 'rgba(59,130,246,0.12)' : 'var(--surface2)'};border:1px solid ${currentStageIdx===i ? 'rgba(59,130,246,0.4)' : 'var(--border)'};border-radius:8px;padding:8px 12px;cursor:pointer" onclick="selectStage(${i})">
+              <div>
+                <div style="font-weight:600;font-size:13.5px">${s.label || s.id}</div>
+                <div style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${s.id}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                ${s.requires_approval ? '<span class="badge badge-yellow" style="font-size:11px">🔒</span>' : ''}
+                <span class="badge badge-gray" style="font-size:11px">${s.allowed_tools.length} tools</span>
+              </div>
+            </div>`).join('')
+        : '<div class="text-muted text-sm" style="text-align:center;padding:16px">No stages yet</div>';
+    }
+
+    function selectStage(idx) {
+      currentStageIdx = idx;
+      const stage = stages[idx];
+      if (!stage) return;
+
+      document.getElementById('stage-editor').style.display = 'block';
+      document.getElementById('empty-editor').style.display = 'none';
+      document.getElementById('editor-title').textContent = `Edit: ${stage.label}`;
+
+      document.getElementById('s-id').value = stage.id;
+      document.getElementById('s-label').value = stage.label;
+      document.getElementById('s-desc').value = stage.description;
+      document.getElementById('s-tools').value = stage.allowed_tools.join(', ');
+      document.getElementById('s-approval').checked = stage.requires_approval;
+
+      renderTransitions(stage.transitions);
+      renderStageList();
+    }
+
+    function syncStageId() {
+      if (currentStageIdx === null) return;
+      stages[currentStageIdx].id = document.getElementById('s-id').value;
+      renderStageList();
+      updateInitialSelect();
+      updatePreview();
+    }
+
+    function syncStageLabel() {
+      if (currentStageIdx === null) return;
+      stages[currentStageIdx].label = document.getElementById('s-label').value;
+      document.getElementById('editor-title').textContent = `Edit: ${stages[currentStageIdx].label}`;
+      renderStageList();
+      updatePreview();
+    }
+
+    function renderTransitions(transitions) {
+      const allStageIds = stages.map(s => s.id).filter(id => id !== (currentStageIdx !== null ? stages[currentStageIdx].id : ''));
+      document.getElementById('s-transitions').innerHTML = transitions.map((t, i) => `
+        <div style="display:flex;gap:6px;align-items:center">
+          <select class="select" style="flex:1" onchange="updateTransition(${i},'target',this.value)">
+            ${allStageIds.map(id => `<option value="${id}" ${id===t.target?'selected':''}>${id}</option>`).join('')}
+            ${!allStageIds.includes(t.target) && t.target ? `<option value="${t.target}" selected>${t.target}</option>` : ''}
+          </select>
+          <input class="input" style="flex:2" placeholder="Condition (e.g. caller confirmed budget)" value="${t.condition || ''}" oninput="updateTransition(${i},'condition',this.value)" />
+          <button style="background:none;border:none;cursor:pointer;color:var(--text-muted)" onclick="removeTransition(${i})">✕</button>
+        </div>`).join('');
+    }
+
+    function addTransition() {
+      if (currentStageIdx === null) return;
+      stages[currentStageIdx].transitions.push({ target: '', condition: '' });
+      renderTransitions(stages[currentStageIdx].transitions);
+      updatePreview();
+    }
+
+    function updateTransition(i, key, val) {
+      if (currentStageIdx === null) return;
+      stages[currentStageIdx].transitions[i][key] = val;
+      updatePreview();
+    }
+
+    function removeTransition(i) {
+      if (currentStageIdx === null) return;
+      stages[currentStageIdx].transitions.splice(i, 1);
+      renderTransitions(stages[currentStageIdx].transitions);
+      updatePreview();
+    }
+
+    function deleteCurrentStage() {
+      if (currentStageIdx === null) return;
+      if (!confirm(`Delete stage "${stages[currentStageIdx].label}"?`)) return;
+      stages.splice(currentStageIdx, 1);
+      currentStageIdx = null;
+      document.getElementById('stage-editor').style.display = 'none';
+      document.getElementById('empty-editor').style.display = 'block';
+      renderStageList();
+      updateInitialSelect();
+      updatePreview();
+    }
+
+    function updateInitialSelect() {
+      const sel = document.getElementById('wf-initial');
+      const current = sel.value;
+      sel.innerHTML = stages.map(s => `<option value="${s.id}" ${s.id===current?'selected':''}>${s.label} (${s.id})</option>`).join('');
+    }
+
+    function flushEditorToStage() {
+      if (currentStageIdx === null) return;
+      const s = stages[currentStageIdx];
+      s.description = document.getElementById('s-desc').value;
+      s.allowed_tools = document.getElementById('s-tools').value.split(',').map(t => t.trim()).filter(Boolean);
+      s.requires_approval = document.getElementById('s-approval').checked;
+    }
+
+    function generatePythonConfig() {
+      flushEditorToStage();
+      const name = document.getElementById('wf-name').value || 'my_workflow';
+      const initial = document.getElementById('wf-initial').value || (stages[0]?.id || 'stage_1');
+      const checkpoint = document.getElementById('wf-checkpoint').value;
+
+      const stagesCode = stages.map(s => {
+        const tools = s.allowed_tools.length
+          ? '[\n' + s.allowed_tools.map(t => `            "${t}"`).join(',\n') + '\n        ]'
+          : '[]';
+        const transitions = s.transitions.filter(t => t.target).map(t =>
+          `            StageTransition(target="${t.target}", condition="${t.condition || ''}")`
+        ).join(',\n');
+        return `    WorkflowStage(
+        id="${s.id}",
+        label="${s.label}",
+        description="${s.description.replace(/"/g, '\\"')}",
+        allowed_tools=${tools},
+        transitions=[
+${transitions || '            # no automatic transitions — agent stays here until condition is met'}
+        ],
+        requires_approval=${s.requires_approval ? 'True' : 'False'},
+    ),`;
+      }).join('\n');
+
+      const checkpointLine = checkpoint
+        ? `    checkpoint_store=SQLiteCheckpointStore("${checkpoint}"),\n`
+        : '';
+
+      return `"""Auto-generated workflow config for "${name}".
+
+Copy into your preset's workflow.py and import in __init__.py.
+"""
+
+from saja.agent.core.workflow import (
+    WorkflowController,
+    WorkflowDefinition,
+    WorkflowStage,
+    StageTransition,
+)
+${checkpoint ? 'from saja.agent.core.workflow import SQLiteCheckpointStore\n' : ''}
+from saja.agent.core.session import RuntimeSession
+
+
+def create_${name}_workflow(
+    runtime_session: RuntimeSession,
+) -> WorkflowController:
+    definition = WorkflowDefinition(
+        name="${name}",
+        initial_stage="${initial}",
+        stages=[
+${stagesCode}
+        ],
+${checkpointLine}    )
+    return WorkflowController(
+        definition=definition,
+        runtime_session=runtime_session,
+    )
+`;
+    }
+
+    function generateJson() {
+      flushEditorToStage();
+      return JSON.stringify({
+        name: document.getElementById('wf-name').value || 'my_workflow',
+        initial_stage: document.getElementById('wf-initial').value,
+        checkpoint: document.getElementById('wf-checkpoint').value || null,
+        stages: stages,
+      }, null, 2);
+    }
+
+    function updatePreview() {
+      flushEditorToStage();
+      document.getElementById('code-preview').textContent = stages.length
+        ? generatePythonConfig()
+        : '# Add a stage to see the generated config.';
+    }
+
+    function exportWorkflow() {
+      document.getElementById('export-content').textContent = generatePythonConfig();
+      document.getElementById('export-modal').classList.add('show');
+    }
+
+    function closeExport() { document.getElementById('export-modal').classList.remove('show'); }
+
+    function copyPreview() {
+      navigator.clipboard.writeText(document.getElementById('code-preview').textContent)
+        .then(() => window.showToast('Copied!', 'success'));
+    }
+
+    function copyExport() {
+      navigator.clipboard.writeText(document.getElementById('export-content').textContent)
+        .then(() => window.showToast('Copied!', 'success'));
+    }
+
+    function importWorkflow() {
+      document.getElementById('import-modal').classList.add('show');
+    }
+
+    function doImport() {
+      try {
+        const json = JSON.parse(document.getElementById('import-json').value);
+        document.getElementById('wf-name').value = json.name || 'my_workflow';
+        stages = (json.stages || []).map(s => ({
+          id: s.id || '',
+          label: s.label || s.id || '',
+          description: s.description || '',
+          allowed_tools: s.allowed_tools || [],
+          transitions: s.transitions || [],
+          requires_approval: s.requires_approval || false,
+        }));
+        currentStageIdx = null;
+        document.getElementById('stage-editor').style.display = 'none';
+        document.getElementById('empty-editor').style.display = 'block';
+        renderStageList();
+        updateInitialSelect();
+        if (json.initial_stage) document.getElementById('wf-initial').value = json.initial_stage;
+        if (json.checkpoint) document.getElementById('wf-checkpoint').value = json.checkpoint;
+        updatePreview();
+        document.getElementById('import-modal').classList.remove('show');
+        window.showToast(`Imported ${stages.length} stages`, 'success');
+      } catch (e) {
+        window.showToast('Invalid JSON: ' + e.message, 'error');
+      }
+    }
+
+    // Add a starter workflow for demo
+    function loadExample() {
+      stages = [
+        makeStage('Intake', 'intake'),
+        makeStage('Qualify', 'qualify'),
+        makeStage('Schedule', 'schedule'),
+        makeStage('Close', 'close'),
+      ];
+      stages[0].description = 'Gather caller name, company, and purpose of the call.';
+      stages[0].allowed_tools = [];
+      stages[0].transitions = [{ target: 'qualify', condition: 'caller intent confirmed' }];
+      stages[1].description = 'Determine if this is a qualified opportunity.';
+      stages[1].allowed_tools = ['search_contact', 'create_contact'];
+      stages[1].transitions = [{ target: 'schedule', condition: 'caller is qualified' }, { target: 'close', condition: 'caller is not a fit' }];
+      stages[2].description = 'Book a demo or follow-up call.';
+      stages[2].allowed_tools = ['check_availability', 'create_event', 'create_deal'];
+      stages[2].transitions = [{ target: 'close', condition: 'appointment booked' }];
+      stages[3].description = 'Wrap up the call and end the session.';
+      stages[3].allowed_tools = ['add_note'];
+      stages[3].transitions = [];
+      stages[3].requires_approval = false;
+
+      renderStageList();
+      updateInitialSelect();
+      document.getElementById('wf-name').value = 'sales_qualification';
+      updatePreview();
+    }
+
+    document.querySelectorAll('.modal-backdrop').forEach(el =>
+      el.addEventListener('click', e => { if (e.target === e.currentTarget) el.classList.remove('show'); })
+    );
+
+    document.getElementById('wf-name').addEventListener('input', updatePreview);
+    document.getElementById('wf-initial').addEventListener('change', updatePreview);
+
+    loadExample();
+  </script>
+</DashboardLayout>

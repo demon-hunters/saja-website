@@ -1,0 +1,113 @@
+---
+const pillars = [
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12h3m14 0h3M12 2v3m0 14v3M4.22 4.22l2.12 2.12m11.32 11.32 2.12 2.12M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+      <circle cx="12" cy="12" r="4"/>
+    </svg>`,
+    color: '#00D4FF',
+    heading: 'Real-time & interruptible',
+    body: 'Streaming STT→LLM→TTS in one pipeline. Barge-in, duplex pause, and turn management mean callers never wait for the agent to finish speaking before they can respond.',
+    tags: ['Duplex audio', 'Barge-in', 'Low latency'],
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="16 3 21 3 21 8"/>
+      <line x1="4" y1="20" x2="21" y2="3"/>
+      <polyline points="21 16 21 21 16 21"/>
+      <line x1="15" y1="15" x2="21" y2="21"/>
+    </svg>`,
+    color: '#A78BFA',
+    heading: 'Swap any provider in one line',
+    body: 'STT, LLM, and TTS providers are config choices, not code changes. Mix Deepgram, Claude, ElevenLabs — or switch to OpenAI for everything. No refactoring required.',
+    tags: ['Multi-provider', 'Config-driven', 'Hot-swap'],
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>`,
+    color: '#34D399',
+    heading: 'Production-grade from day one',
+    body: 'Session logging, usage tracking, policy middleware, MCP tool protocol, multi-agent delegation, and audit-ready transcripts — not bolted on later, built into the runtime.',
+    tags: ['Observability', 'MCP tools', 'Multi-agent'],
+  },
+];
+---
+
+<section id="pillars" class="py-24 px-6 reveal">
+  <div class="max-w-7xl mx-auto">
+    <!-- Section header -->
+    <div class="text-center mb-16">
+      <p class="text-sm font-medium tracking-widest uppercase mb-3" style="color: #3D526B; letter-spacing: 0.12em;">
+        Why saja
+      </p>
+      <h2 class="font-display font-bold" style="font-size: clamp(1.8rem, 3vw, 2.5rem); color: #F1F5F9; letter-spacing: -0.02em;">
+        Voice AI built for the real world
+      </h2>
+    </div>
+
+    <!-- Pillar cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 reveal-stagger">
+      {pillars.map((p, i) => (
+        <div
+          class="pillar-card rounded-xl p-8 flex flex-col gap-5 transition-all duration-300 border relative overflow-hidden"
+          style={`background: linear-gradient(180deg, #0F1520 0%, #0D1117 100%); border-color: #1E293B;`}
+          data-color={p.color}
+        >
+          <!-- Top accent line -->
+          <div class="absolute top-0 left-0 right-0 h-px" style={`background: linear-gradient(to right, ${p.color}, transparent);`}></div>
+
+          <!-- Icon -->
+          <div
+            class="pillar-icon w-14 h-14 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300"
+            style={`background: radial-gradient(circle at center, ${p.color}20, ${p.color}08); color: ${p.color}; box-shadow: 0 0 20px ${p.color}15;`}
+            set:html={p.icon}
+          />
+
+          <!-- Content -->
+          <div class="flex flex-col gap-3">
+            <h3 class="font-display font-semibold text-lg leading-snug" style="color: #F1F5F9;">{p.heading}</h3>
+            <p class="text-sm leading-relaxed" style="color: #64748B;">{p.body}</p>
+          </div>
+
+          <!-- Tags -->
+          <div class="flex flex-wrap gap-2 mt-auto pt-2">
+            {p.tags.map(tag => (
+              <span
+                class="text-xs px-3 py-1.5 rounded-md font-medium"
+                style={`background-color: ${p.color}10; color: ${p.color}; border-left: 2px solid ${p.color}60;`}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .pillar-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .pillar-card:hover .pillar-icon {
+    transform: scale(1.05);
+  }
+
+  .pillar-card[data-color="#00D4FF"]:hover {
+    border-color: rgba(0, 212, 255, 0.25) !important;
+    box-shadow: 0 8px 30px rgba(0, 212, 255, 0.08), 0 0 0 1px rgba(0, 212, 255, 0.1);
+  }
+
+  .pillar-card[data-color="#A78BFA"]:hover {
+    border-color: rgba(167, 139, 250, 0.25) !important;
+    box-shadow: 0 8px 30px rgba(167, 139, 250, 0.08), 0 0 0 1px rgba(167, 139, 250, 0.1);
+  }
+
+  .pillar-card[data-color="#34D399"]:hover {
+    border-color: rgba(52, 211, 153, 0.25) !important;
+    box-shadow: 0 8px 30px rgba(52, 211, 153, 0.08), 0 0 0 1px rgba(52, 211, 153, 0.1);
+  }
+</style>

@@ -1,0 +1,401 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  activeSection?: string;
+}
+
+const { title = 'SAJA Dashboard', activeSection = '' } = Astro.props;
+
+const navItems = [
+  { id: 'agents',     label: 'Agents',        icon: '🤖', href: '/dashboard/agents' },
+  { id: 'builder',    label: 'Agent Builder',  icon: '✏️',  href: '/dashboard/builder' },
+  { id: 'knowledge',  label: 'Knowledge Base', icon: '📚', href: '/dashboard/knowledge' },
+  { id: 'tools',      label: 'Tool Catalog',   icon: '🔌', href: '/dashboard/tools' },
+  { id: 'workflows',  label: 'Workflows',      icon: '⚡', href: '/dashboard/workflows' },
+  { id: 'numbers',    label: 'Phone Numbers',  icon: '📞', href: '/dashboard/numbers' },
+  { id: 'analytics',  label: 'Analytics',      icon: '📊', href: '/dashboard/analytics' },
+  { id: 'settings',   label: 'Settings',       icon: '⚙️',  href: '/dashboard/settings' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} — SAJA Voice</title>
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --bg:        #080C14;
+        --surface:   #0F1724;
+        --surface2:  #162032;
+        --border:    #1E2D42;
+        --border2:   #2A3F5A;
+        --accent:    #3B82F6;
+        --accent-dim:#1D4ED8;
+        --green:     #22C55E;
+        --red:       #EF4444;
+        --yellow:    #F59E0B;
+        --text:      #F1F5F9;
+        --text-dim:  #94A3B8;
+        --text-muted:#4E6175;
+        --sidebar-w: 220px;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        min-height: 100vh;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: var(--sidebar-w);
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        z-index: 100;
+        overflow-y: auto;
+      }
+
+      .sidebar-logo {
+        padding: 20px 16px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+      }
+
+      .sidebar-logo img { width: 28px; height: 28px; border-radius: 6px; }
+
+      .sidebar-logo-text {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: -0.3px;
+      }
+
+      .sidebar-logo-text span { color: var(--accent); }
+
+      .sidebar-nav {
+        flex: 1;
+        padding: 12px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text-dim);
+        font-size: 13.5px;
+        font-weight: 500;
+        transition: all 0.15s;
+      }
+
+      .nav-item:hover { background: var(--surface2); color: var(--text); }
+      .nav-item.active { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+      .nav-item-icon { font-size: 15px; width: 20px; text-align: center; }
+
+      .sidebar-footer {
+        padding: 12px 16px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      /* Main content */
+      .main {
+        margin-left: var(--sidebar-w);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .topbar {
+        height: 56px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+
+      .topbar-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+      .page-content { flex: 1; padding: 24px; max-width: 1100px; }
+
+      /* Utility components */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s;
+        text-decoration: none;
+      }
+
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-primary:hover { background: var(--accent-dim); }
+      .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border2); }
+      .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+      .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+      .btn-danger:hover { background: rgba(239,68,68,0.25); }
+      .btn-sm { padding: 4px 10px; font-size: 12.5px; }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .card-title { font-size: 15px; font-weight: 600; color: var(--text); }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 11.5px;
+        font-weight: 600;
+      }
+      .badge-blue { background: rgba(59,130,246,0.15); color: #60A5FA; }
+      .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+      .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+      .badge-gray { background: var(--surface2); color: var(--text-dim); }
+
+      .input, .select, .textarea {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: var(--text);
+        font-size: 13.5px;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .input:focus, .select:focus, .textarea:focus { border-color: var(--accent); }
+
+      .textarea { resize: vertical; min-height: 120px; }
+
+      .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+      .form-label { font-size: 12.5px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+      .table { width: 100%; border-collapse: collapse; }
+      .table th { text-align: left; padding: 10px 12px; font-size: 11.5px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+      .table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13.5px; color: var(--text); }
+      .table tr:last-child td { border-bottom: none; }
+      .table tr:hover td { background: var(--surface2); }
+
+      .empty-state { text-align: center; padding: 48px 24px; color: var(--text-dim); }
+      .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+      .empty-state-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+      .empty-state-desc { font-size: 13.5px; line-height: 1.6; }
+
+      .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+      .status-dot.green { background: var(--green); }
+      .status-dot.yellow { background: var(--yellow); }
+      .status-dot.red { background: var(--red); }
+      .status-dot.gray { background: var(--text-muted); }
+
+      .toast {
+        position: fixed;
+        bottom: 24px; right: 24px;
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 13.5px;
+        color: var(--text);
+        z-index: 9999;
+        display: none;
+        gap: 8px;
+        align-items: center;
+        max-width: 340px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      }
+      .toast.show { display: flex; }
+      .toast.success { border-color: rgba(34,197,94,0.4); }
+      .toast.error { border-color: rgba(239,68,68,0.4); }
+
+      .modal-backdrop {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(4px);
+        z-index: 200;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-backdrop.show { display: flex; }
+
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border2);
+        border-radius: 16px;
+        padding: 24px;
+        width: 100%;
+        max-width: 560px;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .modal-title { font-size: 17px; font-weight: 700; }
+
+      .close-btn {
+        background: none; border: none; cursor: pointer;
+        color: var(--text-dim); font-size: 20px;
+        line-height: 1; padding: 4px;
+        border-radius: 4px;
+      }
+      .close-btn:hover { color: var(--text); background: var(--surface2); }
+
+      code, .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+      .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+      .text-dim { color: var(--text-dim); }
+      .text-muted { color: var(--text-muted); }
+      .text-sm { font-size: 12.5px; }
+      .text-green { color: var(--green); }
+      .text-red { color: var(--red); }
+      .text-accent { color: var(--accent); }
+
+      .flex { display: flex; }
+      .flex-col { flex-direction: column; }
+      .items-center { align-items: center; }
+      .justify-between { justify-content: space-between; }
+      .gap-2 { gap: 8px; }
+      .gap-3 { gap: 12px; }
+      .gap-4 { gap: 16px; }
+      .mb-2 { margin-bottom: 8px; }
+      .mb-4 { margin-bottom: 16px; }
+      .mb-6 { margin-bottom: 24px; }
+      .mt-4 { margin-top: 16px; }
+      .w-full { width: 100%; }
+      .flex-1 { flex: 1; }
+    </style>
+  </head>
+  <body>
+
+    <aside class="sidebar">
+      <a class="sidebar-logo" href="/">
+        <img src="/logo.png" alt="SAJA" />
+        <span class="sidebar-logo-text">SAJA <span>Voice</span></span>
+      </a>
+      <nav class="sidebar-nav">
+        {navItems.map(item => (
+          <a
+            href={item.href}
+            class={`nav-item ${activeSection === item.id ? 'active' : ''}`}
+          >
+            <span class="nav-item-icon">{item.icon}</span>
+            {item.label}
+          </a>
+        ))}
+      </nav>
+      <div class="sidebar-footer">
+        <div style="margin-bottom:4px">SAJA Voice v0.3.1</div>
+        <div><a href="https://github.com/ng911/saja" style="color:var(--accent);text-decoration:none">GitHub</a> · <a href="/docs" style="color:var(--accent);text-decoration:none">Docs</a></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <span class="topbar-title">{title}</span>
+        <div class="topbar-actions">
+          <slot name="topbar-actions" />
+        </div>
+      </div>
+      <div class="page-content">
+        <slot />
+      </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      window.showToast = function(msg, type = 'default') {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.className = 'toast show ' + type;
+        setTimeout(() => { el.className = 'toast'; }, 3500);
+      };
+
+      const API_BASE = window.location.hostname === 'localhost'
+        ? 'http://localhost:8000/api/v1'
+        : '/api/v1';
+      window.API_BASE = API_BASE;
+
+      window.apiFetch = async function(path, options = {}) {
+        const apiKey = localStorage.getItem('saja_api_key') || '';
+        const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+        if (apiKey) headers['X-API-Key'] = apiKey;
+        const res = await fetch(API_BASE + path, { ...options, headers });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: res.statusText }));
+          throw new Error(err.detail || res.statusText);
+        }
+        return res.json();
+      };
+    </script>
+  </body>
+</html>

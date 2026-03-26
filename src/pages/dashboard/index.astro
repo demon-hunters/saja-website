@@ -1,0 +1,40 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Dashboard" activeSection="dashboard">
+  <div style="padding-top:12px">
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:6px">Welcome to SAJA Voice</h2>
+    <p style="color:var(--text-dim);margin-bottom:28px">Build and deploy real-time voice agents — no code required.</p>
+
+    <div class="grid-3" style="margin-bottom:24px">
+      <a href="/dashboard/agents" class="card" style="text-decoration:none;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:12px">🤖</div>
+        <div class="card-title" style="margin-bottom:6px">Agents</div>
+        <div class="text-dim text-sm">Manage your voice agents, update prompts, and test conversations.</div>
+      </a>
+      <a href="/dashboard/builder" class="card" style="text-decoration:none;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:12px">✏️</div>
+        <div class="card-title" style="margin-bottom:6px">Agent Builder</div>
+        <div class="text-dim text-sm">Create a new agent with a guided editor — persona, voice, tools, and behavior.</div>
+      </a>
+      <a href="/dashboard/analytics" class="card" style="text-decoration:none;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:12px">📊</div>
+        <div class="card-title" style="margin-bottom:6px">Analytics</div>
+        <div class="text-dim text-sm">Review call transcripts, turn traces, and usage metrics.</div>
+      </a>
+    </div>
+
+    <div class="grid-2">
+      <a href="/dashboard/tools" class="card" style="text-decoration:none;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:12px">🔌</div>
+        <div class="card-title" style="margin-bottom:6px">Tool Catalog</div>
+        <div class="text-dim text-sm">Connect Google Calendar, HubSpot, Stripe, and more with one click.</div>
+      </a>
+      <a href="/dashboard/numbers" class="card" style="text-decoration:none;cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;margin-bottom:12px">📞</div>
+        <div class="card-title" style="margin-bottom:6px">Phone Numbers</div>
+        <div class="text-dim text-sm">Buy and manage phone numbers, assign them to your agents.</div>
+      </a>
+    </div>
+  </div>
+</DashboardLayout>

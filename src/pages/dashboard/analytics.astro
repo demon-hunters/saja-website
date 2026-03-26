@@ -1,0 +1,258 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+<DashboardLayout title="Analytics" activeSection="analytics">
+
+  <!-- Stats row -->
+  <div class="grid-3 mb-6" id="stats-row">
+    <div class="card" style="padding:16px">
+      <div class="text-dim text-sm mb-2">Total Calls</div>
+      <div style="font-size:28px;font-weight:700" id="stat-total">—</div>
+    </div>
+    <div class="card" style="padding:16px">
+      <div class="text-dim text-sm mb-2">Active Now</div>
+      <div style="font-size:28px;font-weight:700;color:var(--green)" id="stat-active">—</div>
+    </div>
+    <div class="card" style="padding:16px">
+      <div class="text-dim text-sm mb-2">Avg Duration</div>
+      <div style="font-size:28px;font-weight:700" id="stat-avg">—</div>
+    </div>
+  </div>
+
+  <!-- Calls table -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <span class="card-title">Call History</span>
+      <button class="btn btn-ghost btn-sm" onclick="loadCalls()">↻ Refresh</button>
+    </div>
+    <div id="calls-container">
+      <div class="empty-state">
+        <div class="empty-state-icon">⏳</div>
+        <div class="empty-state-title">Loading calls...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transcript modal -->
+  <div class="modal-backdrop" id="transcript-modal">
+    <div class="modal" style="max-width:720px">
+      <div class="modal-header">
+        <span class="modal-title">Call Transcript</span>
+        <button class="close-btn" onclick="closeTranscript()">✕</button>
+      </div>
+      <div id="call-meta" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-ghost btn-sm" id="tab-transcript" onclick="showTab('transcript')" style="border-color:var(--accent);color:var(--accent)">Transcript</button>
+        <button class="btn btn-ghost btn-sm" id="tab-trace" onclick="showTab('trace')">Turn Trace</button>
+        <button class="btn btn-ghost btn-sm" id="tab-raw" onclick="showTab('raw')">Raw Log</button>
+      </div>
+      <div id="transcript-content" style="max-height:440px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentCallId = null;
+    let callTrace = null;
+    let callLog = null;
+
+    async function loadCalls() {
+      try {
+        const data = await window.apiFetch('/calls');
+        const calls = data.calls || [];
+
+        // Stats
+        document.getElementById('stat-total').textContent = calls.length;
+        const active = calls.filter(c => !c.ended_at).length;
+        document.getElementById('stat-active').textContent = active;
+
+        const durations = calls
+          .filter(c => c.started_at && c.ended_at)
+          .map(c => {
+            const s = new Date(c.started_at);
+            const e = new Date(c.ended_at);
+            return (e - s) / 1000;
+          });
+        const avg = durations.length
+          ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+          : 0;
+        document.getElementById('stat-avg').textContent = avg ? `${avg}s` : '—';
+
+        renderCalls(calls);
+      } catch (e) {
+        document.getElementById('calls-container').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div class="empty-state-title">Could not load calls</div>
+            <div class="empty-state-desc">${e.message}</div>
+          </div>`;
+      }
+    }
+
+    function renderCalls(calls) {
+      if (!calls.length) {
+        document.getElementById('calls-container').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <div class="empty-state-title">No calls yet</div>
+            <div class="empty-state-desc">Call history will appear here once agents handle their first calls.</div>
+          </div>`;
+        return;
+      }
+
+      const rows = calls.map(c => {
+        const started = c.started_at ? new Date(c.started_at).toLocaleString() : '—';
+        const ended = c.ended_at ? new Date(c.ended_at).toLocaleString() : 'Active';
+        let duration = '—';
+        if (c.started_at && c.ended_at) {
+          const secs = Math.round((new Date(c.ended_at) - new Date(c.started_at)) / 1000);
+          duration = secs < 60 ? `${secs}s` : `${Math.floor(secs/60)}m ${secs%60}s`;
+        }
+        const status = !c.ended_at
+          ? '<span class="status-dot green"></span>Active'
+          : '<span class="status-dot gray"></span>Ended';
+
+        return `<tr>
+          <td class="mono" style="font-size:12px;color:var(--text-dim)">${c.call_id.slice(0,12)}…</td>
+          <td>${c.caller_number || '—'}</td>
+          <td>${c.callee_number || '—'}</td>
+          <td>${c.agent_id ? `<span class="badge badge-blue">${c.agent_id.slice(0,8)}…</span>` : '<span class="text-muted">—</span>'}</td>
+          <td>${started}</td>
+          <td>${duration}</td>
+          <td>${status}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick='openTranscript("${c.call_id}")'>View</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+      document.getElementById('calls-container').innerHTML = `
+        <table class="table">
+          <thead><tr>
+            <th>Call ID</th><th>From</th><th>To</th><th>Agent</th>
+            <th>Started</th><th>Duration</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    async function openTranscript(callId) {
+      currentCallId = callId;
+      callTrace = null;
+      callLog = null;
+      document.getElementById('transcript-modal').classList.add('show');
+      document.getElementById('transcript-content').innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">Loading...</div>';
+
+      try {
+        const [trace, log, call] = await Promise.all([
+          window.apiFetch(`/calls/${callId}/trace`),
+          window.apiFetch(`/calls/${callId}/session-log`),
+          window.apiFetch(`/calls/${callId}`),
+        ]);
+        callTrace = trace;
+        callLog = log;
+
+        // Meta
+        const started = call.started_at ? new Date(call.started_at).toLocaleString() : '—';
+        const ended = call.ended_at ? new Date(call.ended_at).toLocaleString() : 'Active';
+        document.getElementById('call-meta').innerHTML = `
+          <div><span class="text-muted">From:</span> ${call.caller_number || '—'}</div>
+          <div><span class="text-muted">To:</span> ${call.callee_number || '—'}</div>
+          <div><span class="text-muted">Started:</span> ${started}</div>
+          <div><span class="text-muted">Ended:</span> ${ended}</div>`;
+
+        showTab('transcript');
+      } catch (e) {
+        document.getElementById('transcript-content').innerHTML = `<div class="text-dim" style="padding:16px">Error: ${e.message}</div>`;
+      }
+    }
+
+    function showTab(tab) {
+      ['transcript','trace','raw'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (btn) {
+          btn.style.borderColor = t === tab ? 'var(--accent)' : 'var(--border2)';
+          btn.style.color = t === tab ? 'var(--accent)' : 'var(--text-dim)';
+        }
+      });
+
+      const content = document.getElementById('transcript-content');
+      if (!callTrace && !callLog) return;
+
+      if (tab === 'transcript') {
+        const turns = (callTrace?.turns || []);
+        if (!turns.length) {
+          content.innerHTML = '<div class="text-dim" style="padding:16px">No transcript data available.</div>';
+          return;
+        }
+        content.innerHTML = turns.map((turn, i) => {
+          const parts = [];
+          if (turn.user_input) {
+            parts.push(`
+              <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+                <div style="background:var(--surface2);border-radius:12px 12px 2px 12px;padding:10px 14px;max-width:70%;font-size:13.5px">
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Caller</div>
+                  ${turn.user_input}
+                </div>
+              </div>`);
+          }
+          if (turn.agent_response) {
+            parts.push(`
+              <div style="display:flex;margin-bottom:8px">
+                <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:12px 12px 12px 2px;padding:10px 14px;max-width:70%;font-size:13.5px">
+                  <div style="font-size:11px;color:var(--accent);margin-bottom:4px">Agent</div>
+                  ${turn.agent_response}
+                </div>
+              </div>`);
+          }
+          if (turn.tool_calls?.length) {
+            const toolsHtml = turn.tool_calls.map(tc => `
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);border-radius:6px;padding:6px 10px;margin:2px 0;color:var(--yellow)">
+                🔧 ${tc.name || tc.tool_name}(${JSON.stringify(tc.arguments || tc.args || {})})
+              </div>`).join('');
+            parts.push(`<div style="margin-bottom:8px">${toolsHtml}</div>`);
+          }
+          return parts.join('');
+        }).join('');
+
+      } else if (tab === 'trace') {
+        const turns = callTrace?.turns || [];
+        if (!turns.length) {
+          content.innerHTML = '<div class="text-dim" style="padding:16px">No trace data available.</div>';
+          return;
+        }
+        content.innerHTML = turns.map((turn, i) => `
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--text-dim);margin-bottom:8px">TURN ${i + 1}</div>
+            ${turn.user_input ? `<div style="margin-bottom:6px"><span class="badge badge-gray" style="margin-right:6px">User</span>${turn.user_input}</div>` : ''}
+            ${(turn.tool_calls||[]).map(tc => `
+              <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:6px;padding:8px;margin:4px 0;font-family:'JetBrains Mono',monospace;font-size:11.5px">
+                🔧 <strong>${tc.name||tc.tool_name}</strong> → ${JSON.stringify(tc.result || tc.output || '…')}
+              </div>`).join('')}
+            ${turn.agent_response ? `<div style="margin-top:6px"><span class="badge badge-blue" style="margin-right:6px">Agent</span>${turn.agent_response}</div>` : ''}
+          </div>`).join('');
+
+      } else {
+        const records = callLog?.records || callLog || [];
+        if (!records.length) {
+          content.innerHTML = '<div class="text-dim" style="padding:16px">No log data available.</div>';
+          return;
+        }
+        content.innerHTML = `<pre style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.7;white-space:pre-wrap">${
+          (Array.isArray(records) ? records : [records])
+            .map(r => JSON.stringify(r, null, 2))
+            .join('\n---\n')
+        }</pre>`;
+      }
+    }
+
+    function closeTranscript() {
+      document.getElementById('transcript-modal').classList.remove('show');
+    }
+
+    document.getElementById('transcript-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeTranscript();
+    });
+
+    loadCalls();
+  </script>
+</DashboardLayout>
