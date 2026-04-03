@@ -12,6 +12,7 @@ node_modules/
 
 # Build artifacts
 *.log
+coverage/
 
 # Editors
 .DS_Store
